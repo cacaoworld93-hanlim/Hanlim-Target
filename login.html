@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한림제약 판매 대시보드</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans KR', -apple-system, sans-serif;
+    background: #1a3a6b;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 48px 40px 40px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    text-align: center;
+  }
+  .logo { margin-bottom: 8px; }
+  .logo img { height: 48px; }
+  .subtitle {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 32px;
+  }
+  .divider {
+    border: none;
+    border-top: 1px solid #eee;
+    margin: 0 0 28px;
+  }
+  .msg-box {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .msg-box.error   { background: #fff0f0; color: #c0392b; border: 1px solid #f5c6cb; display: block; }
+  .msg-box.success { background: #f0fff4; color: #27ae60; border: 1px solid #c3e6cb; display: block; }
+  .msg-box.info    { background: #f0f4ff; color: #2563eb; border: 1px solid #bfdbfe; display: block; }
+  label {
+    display: block;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 6px;
+  }
+  input[type=email] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 15px;
+    margin-bottom: 18px;
+    outline: none;
+    transition: border .2s;
+  }
+  input[type=email]:focus { border-color: #1a3a6b; }
+  .btn {
+    width: 100%;
+    padding: 13px;
+    background: #1a3a6b;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .btn:hover { background: #14305a; }
+  .btn:disabled { background: #aaa; cursor: not-allowed; }
+  .hint {
+    font-size: 12px;
+    color: #888;
+    margin-top: 12px;
+  }
+  .footer {
+    margin-top: 32px;
+    font-size: 12px;
+    color: #aaa;
+    border-top: 1px solid #eee;
+    padding-top: 16px;
+  }
+  .sent-box { display: none; }
+  .sent-box.visible { display: block; }
+  .form-box { display: block; }
+  .form-box.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">
+    <img src="https://cacaoworld93-hanlim.github.io/Hanlim-Target/logo.png"
+         onerror="this.style.display='none'"
+         alt="한림제약">
+    <div style="font-size:22px;font-weight:800;color:#1a3a6b;margin-bottom:4px;">한 림 제 약</div>
+  </div>
+  <div class="subtitle">판매 대시보드</div>
+  <hr class="divider">
+
+  <div id="msgBox" class="msg-box"></div>
+
+  <!-- 이메일 입력 폼 -->
+  <div class="form-box" id="formBox">
+    <label for="emailInput">한림 이메일 주소</label>
+    <input type="email" id="emailInput" placeholder="example@hanlim.com" autocomplete="email">
+    <button class="btn" id="sendBtn" onclick="sendLoginLink()">로그인 링크 전송</button>
+    <p class="hint">📧 @hanlim.com 이메일로 로그인 링크가 전송됩니다</p>
+  </div>
+
+  <!-- 전송 완료 안내 -->
+  <div class="sent-box" id="sentBox">
+    <div style="font-size:48px;margin-bottom:12px;">📬</div>
+    <div style="font-size:16px;font-weight:700;color:#1a3a6b;margin-bottom:8px;">로그인 링크를 전송했습니다</div>
+    <div style="font-size:13px;color:#555;line-height:1.6;">
+      <span id="sentEmail"></span>로<br>
+      전송된 메일의 <strong>링크를 클릭</strong>하면<br>
+      자동으로 로그인됩니다.
+    </div>
+    <div style="margin-top:16px;font-size:12px;color:#888;">
+      메일이 없으면 스팸함을 확인해주세요
+    </div>
+    <button class="btn" style="margin-top:20px;background:#eee;color:#333;" onclick="resetForm()">다시 시도</button>
+  </div>
+
+  <div class="footer">
+    📞 02-3489-6226<br>
+    © 2026 한림제약. All rights reserved.
+  </div>
+</div>
+
+<!-- Firebase CDN -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+// ================================================================
+// Firebase 설정
+// ================================================================
+const FIREBASE_CONFIG = {
+    apiKey:            "AIzaSyC1l8qJ-bDh4pGELdmW8B5xiCCoVQNBrWE",
+    authDomain:        "hanlim-target-dfd63.firebaseapp.com",
+    projectId:         "hanlim-target-dfd63",
+    storageBucket:     "hanlim-target-dfd63.firebasestorage.app",
+    messagingSenderId: "621470397001",
+    appId:             "1:621470397001:web:a583503fd36fcb93c6c598"
+};
+const ADMIN_EMAIL    = 'eui.hyuk@hanlim.com';
+const DASHBOARD_URL  = 'dashboard.html';
+const THIS_URL       = 'https://cacaoworld93-hanlim.github.io/Hanlim-Target/login.html';
+
+// Firebase 초기화
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// ================================================================
+// 이미 로그인된 경우 대시보드로 이동
+// ================================================================
+auth.onAuthStateChanged(user => {
+  if (user) {
+    const email = user.email || '';
+    if (email.endsWith('@hanlim.com') && user.emailVerified) {
+      window.location.href = DASHBOARD_URL;
+    }
+  }
+});
+
+// ================================================================
+// 이메일 링크 처리 (메일에서 링크 클릭 시)
+// ================================================================
+if (firebase.auth().isSignInWithEmailLink(window.location.href)) {
+  let email = localStorage.getItem('emailForSignIn');
+  if (!email) {
+    email = window.prompt('로그인에 사용한 이메일을 입력해주세요:');
+  }
+  if (email) {
+    showMsg('로그인 처리 중...', 'info');
+    auth.signInWithEmailLink(email, window.location.href)
+      .then(result => {
+        localStorage.removeItem('emailForSignIn');
+        // 방문 로그 저장
+        db.collection('visitLogs').add({
+          email: result.user.email,
+          name: result.user.displayName || '',
+          loginAt: firebase.firestore.FieldValue.serverTimestamp(),
+          userAgent: navigator.userAgent
+        }).catch(() => {});
+        window.location.href = DASHBOARD_URL;
+      })
+      .catch(err => {
+        console.error(err);
+        showMsg('로그인 실패: ' + err.message, 'error');
+      });
+  }
+}
+
+// ================================================================
+// 로그인 링크 전송
+// ================================================================
+function sendLoginLink() {
+  const email = document.getElementById('emailInput').value.trim().toLowerCase();
+
+  if (!email) {
+    showMsg('이메일을 입력해주세요.', 'error');
+    return;
+  }
+  if (!email.endsWith('@hanlim.com')) {
+    showMsg('@hanlim.com 이메일만 사용 가능합니다.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  btn.textContent = '전송 중...';
+
+  const actionCodeSettings = {
+    url: THIS_URL,
+    handleCodeInApp: true
+  };
+
+  auth.sendSignInLinkToEmail(email, actionCodeSettings)
+    .then(() => {
+      localStorage.setItem('emailForSignIn', email);
+      document.getElementById('formBox').classList.add('hidden');
+      document.getElementById('sentBox').classList.add('visible');
+      document.getElementById('sentEmail').textContent = email;
+    })
+    .catch(err => {
+      console.error(err);
+      btn.disabled = false;
+      btn.textContent = '로그인 링크 전송';
+      showMsg('전송 실패: ' + err.message, 'error');
+    });
+}
+
+function resetForm() {
+  document.getElementById('formBox').classList.remove('hidden');
+  document.getElementById('sentBox').classList.remove('visible');
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('sendBtn').textContent = '로그인 링크 전송';
+  document.getElementById('emailInput').value = '';
+  hideMsg();
+}
+
+function showMsg(text, type) {
+  const box = document.getElementById('msgBox');
+  box.textContent = text;
+  box.className = 'msg-box ' + type;
+}
+function hideMsg() {
+  const box = document.getElementById('msgBox');
+  box.className = 'msg-box';
+}
+
+// 엔터키
+document.getElementById('emailInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendLoginLink();
+});
+</script>
+</body>
+</html>
