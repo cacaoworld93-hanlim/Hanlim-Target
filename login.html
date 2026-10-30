@@ -94,9 +94,13 @@
   .sent-box.visible { display: block; }
   .form-box { display: block; }
   .form-box.hidden { display: none; }
+
+  body.auth-pending .card {
+    visibility: hidden;
+  }
 </style>
 </head>
-<body>
+<body class="auth-pending">
 
 <div class="card">
   <div class="logo">
@@ -165,6 +169,10 @@ firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
+function revealLoginCard() {
+  document.body.classList.remove('auth-pending');
+}
+
 // ================================================================
 // 이미 로그인된 경우 대시보드로 이동
 // ================================================================
@@ -178,19 +186,28 @@ if (justLoggedOut) {
 auth.onAuthStateChanged(user => {
   // ★ 방금 로그아웃했으면 자동 이동 차단 + 남은 세션 강제 정리
   if (justLoggedOut) {
-    if (user) { auth.signOut().catch(() => {}); }
+    if (user) {
+      auth.signOut()
+        .catch(() => {})
+        .finally(() => revealLoginCard());
+    } else {
+      revealLoginCard();
+    }
     return;
   }
   // 이메일 링크 처리 중이면 onAuthStateChanged로 자동 이동하지 않음
   if (firebase.auth().isSignInWithEmailLink(window.location.href)) {
+    revealLoginCard();
     return;
   }
   if (user) {
     const email = user.email || '';
     if (email.endsWith('@hanlim.com')) {
-      window.location.href = DASHBOARD_URL;
+      window.location.replace(DASHBOARD_URL);
+      return;
     }
   }
+  revealLoginCard();
 });
 
 // ================================================================

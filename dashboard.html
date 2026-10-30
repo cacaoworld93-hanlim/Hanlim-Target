@@ -979,11 +979,7 @@ function updateDashboard(m) {
   document.getElementById('cur-month-text').textContent = m + '월';
 }
 
-
-function logout() {
-        // Firebase signOut 사용
-    window.location.href = 'login.html';
-}
+// duplicate logout() removed: the real logout flow above must remain the only definition.
 
 function openPasswordModal() {
     const modal = document.createElement('div');
