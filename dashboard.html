@@ -174,10 +174,14 @@ auth.onAuthStateChanged(user => {
 
     // 관리자 UI 표시
     if (user.email === ADMIN_EMAIL) {
-        const editTab = document.getElementById('tab-edit');
+        const editTab = document.getElementById('tabEdit');
         if (editTab) editTab.style.display = 'inline-block';
+        const logsTab = document.getElementById('tabLogs');
+        if (logsTab) logsTab.style.display = 'inline-block';
         const csvSec = document.getElementById('csvUploadSec');
         if (csvSec) csvSec.style.display = 'block';
+        // 방문 로그 로드
+        if (typeof loadVisitLogs === 'function') loadVisitLogs();
     }
 
     // Firestore에서 현재 월 데이터 실시간 구독
@@ -187,12 +191,12 @@ auth.onAuthStateChanged(user => {
 // ── 로그아웃 ──────────────────────────────────────────────────────
 function logout() {
     if (confirm('정말 로그아웃 하시겠습니까?')) {
-        auth.signOut().then(() => {
-            window.location.replace('login.html?logout=1');
-        }).catch(err => {
-            console.error('로그아웃 오류:', err);
-            window.location.replace('login.html?logout=1');
-        });
+        // signOut 전에 즉시 이동하여 onAuthStateChanged 재트리거 방지
+        auth.signOut()
+            .catch(err => { console.error('로그아웃 오류:', err); })
+            .finally(() => {
+                window.location.replace('login.html?logout=1');
+            });
     }
 }
 </script>

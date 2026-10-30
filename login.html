@@ -174,11 +174,17 @@ const isLogout = urlParams.get('logout') === '1';
 auth.onAuthStateChanged(user => {
   if (isLogout) {
     // 로그아웃 후 리디렉션된 경우 자동 이동 하지 않음
+    // 세션 완전 정리
+    if (user) { auth.signOut().catch(() => {}); }
+    return;
+  }
+  // 이메일 링크 처리 중이면 onAuthStateChanged로 자동 이동하지 않음
+  if (firebase.auth().isSignInWithEmailLink(window.location.href)) {
     return;
   }
   if (user) {
     const email = user.email || '';
-    if (email.endsWith('@hanlim.com') && user.emailVerified) {
+    if (email.endsWith('@hanlim.com')) {
       window.location.href = DASHBOARD_URL;
     }
   }
@@ -189,28 +195,46 @@ auth.onAuthStateChanged(user => {
 // ================================================================
 if (firebase.auth().isSignInWithEmailLink(window.location.href)) {
   let email = localStorage.getItem('emailForSignIn');
-  if (!email) {
-    email = window.prompt('로그인에 사용한 이메일을 입력해주세요:');
-  }
   if (email) {
-    showMsg('로그인 처리 중...', 'info');
-    auth.signInWithEmailLink(email, window.location.href)
-      .then(result => {
-        localStorage.removeItem('emailForSignIn');
-        // 방문 로그 저장
-        db.collection('visitLogs').add({
-          email: result.user.email,
-          name: result.user.displayName || '',
-          loginAt: firebase.firestore.FieldValue.serverTimestamp(),
-          userAgent: navigator.userAgent
-        }).catch(() => {});
-        window.location.href = DASHBOARD_URL;
-      })
-      .catch(err => {
-        console.error(err);
-        showMsg('로그인 실패: ' + err.message, 'error');
-      });
+    // localStorage에 이메일이 있으면 바로 로그인 처리
+    processEmailLink(email);
+  } else {
+    // localStorage에 이메일이 없으면 UI 입력폼으로 안내 (prompt 대신)
+    showEmailConfirmForm();
   }
+}
+
+function processEmailLink(email) {
+  showMsg('로그인 처리 중...', 'info');
+  auth.signInWithEmailLink(email, window.location.href)
+    .then(result => {
+      localStorage.removeItem('emailForSignIn');
+      db.collection('visitLogs').add({
+        email: result.user.email,
+        name: result.user.displayName || '',
+        loginAt: firebase.firestore.FieldValue.serverTimestamp(),
+        userAgent: navigator.userAgent
+      }).catch(() => {});
+      window.location.href = DASHBOARD_URL;
+    })
+    .catch(err => {
+      console.error(err);
+      showMsg('로그인 실패: ' + err.message + ' — 이메일을 확인하고 다시 시도해주세요.', 'error');
+      document.getElementById('formBox').classList.remove('hidden');
+    });
+}
+
+function showEmailConfirmForm() {
+  document.getElementById('formBox').classList.remove('hidden');
+  showMsg('보안을 위해 이메일 주소를 다시 입력해주세요.', 'info');
+  const btn = document.getElementById('sendBtn');
+  btn.textContent = '로그인 확인';
+  btn.onclick = function() {
+    const email = document.getElementById('emailInput').value.trim().toLowerCase();
+    if (!email) { showMsg('이메일을 입력해주세요.', 'error'); return; }
+    if (!email.endsWith('@hanlim.com')) { showMsg('@hanlim.com 이메일만 사용 가능합니다.', 'error'); return; }
+    processEmailLink(email);
+  };
 }
 
 // ================================================================
