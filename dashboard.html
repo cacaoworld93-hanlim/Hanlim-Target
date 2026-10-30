@@ -218,15 +218,11 @@ function showAdminUI() {
 
         const tabEdit = document.getElementById('tabEdit');
         if (tabEdit) tabEdit.style.display = '';
-        bindTabs();
 
         const tabLogs = document.getElementById('tabLogs');
         if (tabLogs) tabLogs.style.display = '';
-        bindTabs();
 
-        if (typeof loadVisitLogs === 'function') {
-            loadVisitLogs();
-        }
+        bindTabs();
     });
 }
 
@@ -702,13 +698,14 @@ function switchTab(e, pane) {
 }
 
 function bindTabs() {
-  document.querySelectorAll('.tab[data-pane]').forEach(btn => {
-    if (btn.dataset.bound === '1') return;
-    btn.dataset.bound = '1';
-    btn.addEventListener('click', function(ev) {
-      ev.preventDefault();
-      activateTab(this.dataset.pane);
-    });
+  const container = document.getElementById('mainTabs');
+  if (!container || container.dataset.bound === '1') return;
+  container.dataset.bound = '1';
+  container.addEventListener('click', function(ev) {
+    const btn = ev.target.closest('.tab[data-pane]');
+    if (!btn) return;
+    ev.preventDefault();
+    activateTab(btn.dataset.pane);
   });
 }
 
@@ -1286,32 +1283,7 @@ function formatNumber(num) {
 window.addEventListener('DOMContentLoaded', function() {
     bindTabs();
     activateTab('dashboard');
-    // 사용자 정보 표시
-    if (currentUser) {
-        const badge = document.getElementById('userBadge');
-        if (badge) {
-            const label = currentUser.name
-                ? (currentUser.name + ' (' + currentUser.email + ')')
-                : currentUser.email;
-            badge.textContent = label;
-        }
-        // 관리자 전용 UI
-        if (currentUser.email === ADMIN_EMAIL) {
-            const adminBtn = document.getElementById('adminPwBtn');
-            if (adminBtn) adminBtn.style.display = 'inline-block';
-            const csvSec = document.getElementById('csvUploadSec');
-            if (csvSec) csvSec.style.display = 'block';
-            // 관리자 탭 표시
-            const tabEdit = document.getElementById('tabEdit');
-            if (tabEdit) tabEdit.style.display = '';
-        bindTabs();
-            const tabLogs = document.getElementById('tabLogs');
-            if (tabLogs) tabLogs.style.display = '';
-        bindTabs();
-            // 방문 로그 로드
-            loadVisitLogs();
-        }
-    }
+    // 사용자 정보 표시는 onAuthStateChanged → updateUserBadge()에서 처리됨
 
     // 월 선택을 현재 월로 설정
     document.getElementById('month-select').value = currentMonth;
