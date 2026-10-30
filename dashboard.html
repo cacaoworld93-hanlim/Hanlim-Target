@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>판매 마감 현황 2026</title>
+<!-- build: 2026-10-30-final-1 -->
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -142,8 +143,9 @@ body{font-family:var(--font);background:#f1f5f9;color:var(--fg);font-size:14px;m
 
 <script>
 // ================================================================
-// ★ 설정 - Firebase 값을 여기에 입력하세요 ★
+// Firebase 설정
 // ================================================================
+const BUILD_VERSION = '2026-10-30-final-1';
 const FIREBASE_CONFIG = {
     apiKey:            "AIzaSyC1l8qJ-bDh4pGELdmW8B5xiCCoVQNBrWE",
     authDomain:        "hanlim-target-dfd63.firebaseapp.com",
@@ -153,61 +155,127 @@ const FIREBASE_CONFIG = {
     appId:             "1:621470397001:web:a583503fd36fcb93c6c598"
 };
 const ADMIN_EMAIL = 'eui.hyuk@hanlim.com';
-// ================================================================
+const LOGOUT_MARKER_KEY = 'justLoggedOutAt';
 
 // Firebase 초기화
 firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
+console.log('[Hanlim Dashboard] build:', BUILD_VERSION);
+
 // ── Firebase Auth 로그인 상태 확인 ───────────────────────────────
 let currentUser = null;
-let isLoggingOut = false; // ★ 로그아웃 진행 중 플래그 (onAuthStateChanged 오작동 방지)
+let isLoggingOut = false;
+
+function runWhenDomReady(fn) {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fn, { once: true });
+    } else {
+        fn();
+    }
+}
+
+function updateUserBadge() {
+    runWhenDomReady(() => {
+        const badge = document.getElementById('userBadge');
+        if (!badge || !currentUser) return;
+        badge.textContent = currentUser.name
+            ? (currentUser.name + ' (' + currentUser.email + ')')
+            : currentUser.email;
+    });
+}
+
+function showAdminUI() {
+    runWhenDomReady(() => {
+        const adminBtn = document.getElementById('adminPwBtn');
+        if (adminBtn) adminBtn.style.display = 'inline-block';
+
+        const csvSec = document.getElementById('csvUploadSec');
+        if (csvSec) csvSec.style.display = 'block';
+
+        const tabEdit = document.getElementById('tabEdit');
+        if (tabEdit) tabEdit.style.display = 'inline-block';
+
+        const tabLogs = document.getElementById('tabLogs');
+        if (tabLogs) tabLogs.style.display = 'inline-block';
+
+        if (typeof loadVisitLogs === 'function') {
+            loadVisitLogs();
+        }
+    });
+}
+
+function hideAdminUI() {
+    runWhenDomReady(() => {
+        const adminBtn = document.getElementById('adminPwBtn');
+        if (adminBtn) adminBtn.style.display = 'none';
+
+        const csvSec = document.getElementById('csvUploadSec');
+        if (csvSec) csvSec.style.display = 'none';
+
+        const tabEdit = document.getElementById('tabEdit');
+        if (tabEdit) tabEdit.style.display = 'none';
+
+        const tabLogs = document.getElementById('tabLogs');
+        if (tabLogs) tabLogs.style.display = 'none';
+    });
+}
+
+function startRealtimeSyncSafe() {
+    runWhenDomReady(() => {
+        if (typeof startRealtimeSync === 'function') {
+            startRealtimeSync();
+        }
+    });
+}
 
 auth.onAuthStateChanged(user => {
-    // ★ 로그아웃 진행 중이면 절대 redirect 하지 않음
-    if (isLoggingOut) return;
+    if (isLoggingOut) {
+        return;
+    }
 
-    if (!user || !user.email || !user.email.endsWith('@hanlim.com')) {
+    const email = (user && user.email) ? String(user.email).toLowerCase() : '';
+    if (!user || !email.endsWith('@hanlim.com')) {
+        currentUser = null;
+        hideAdminUI();
         window.location.replace('login.html');
         return;
     }
-    currentUser = { email: user.email, name: user.displayName || '' };
-    const badge = document.getElementById('userBadge');
-    if (badge) badge.textContent = user.email;
 
-    // 관리자 UI 표시
-    if (user.email === ADMIN_EMAIL) {
-        const editTab = document.getElementById('tabEdit');
-        if (editTab) editTab.style.display = 'inline-block';
-        const logsTab = document.getElementById('tabLogs');
-        if (logsTab) logsTab.style.display = 'inline-block';
-        const csvSec = document.getElementById('csvUploadSec');
-        if (csvSec) csvSec.style.display = 'block';
-        // 방문 로그 로드
-        if (typeof loadVisitLogs === 'function') loadVisitLogs();
+    currentUser = {
+        email: email,
+        name: user.displayName || ''
+    };
+
+    updateUserBadge();
+
+    if (email === ADMIN_EMAIL) {
+        showAdminUI();
+    } else {
+        hideAdminUI();
     }
 
-    // Firestore에서 현재 월 데이터 실시간 구독
-    startRealtimeSync();
+    startRealtimeSyncSafe();
 });
 
 // ── 로그아웃 ──────────────────────────────────────────────────────
-function logout() {
-    if (confirm('정말 로그아웃 하시겠습니까?')) {
-        isLoggingOut = true; // ★ 플래그 ON → onAuthStateChanged의 redirect 완전 차단
+async function logout() {
+    if (!confirm('정말 로그아웃 하시겠습니까?')) {
+        return;
+    }
 
-        // ★ sessionStorage에 로그아웃 상태 기록 → login.html이 읽어서 자동 이동 방지
-        sessionStorage.setItem('justLoggedOut', '1');
+    isLoggingOut = true;
+    currentUser = null;
+    sessionStorage.setItem(LOGOUT_MARKER_KEY, String(Date.now()));
+    localStorage.removeItem('emailForSignIn');
 
-        auth.signOut()
-            .catch(err => {
-                console.error('로그아웃 오류:', err);
-                isLoggingOut = false; // 실패 시 플래그 해제
-            })
-            .finally(() => {
-                window.location.replace('login.html');
-            });
+    try {
+        await auth.signOut();
+    } catch (err) {
+        console.error('로그아웃 오류:', err);
+    } finally {
+        window.location.replace('login.html');
     }
 }
 </script>
@@ -979,7 +1047,10 @@ function updateDashboard(m) {
   document.getElementById('cur-month-text').textContent = m + '월';
 }
 
-// duplicate logout() removed: the real logout flow above must remain the only definition.
+
+function legacyLogoutRedirectOnly() {
+    return logout();
+}
 
 function openPasswordModal() {
     const modal = document.createElement('div');

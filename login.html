@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>한림제약 판매 대시보드</title>
+<!-- build: 2026-10-30-final-1 -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -94,13 +95,9 @@
   .sent-box.visible { display: block; }
   .form-box { display: block; }
   .form-box.hidden { display: none; }
-
-  body.auth-pending .card {
-    visibility: hidden;
-  }
 </style>
 </head>
-<body class="auth-pending">
+<body>
 
 <div class="card">
   <div class="logo">
@@ -152,6 +149,7 @@
 // ================================================================
 // Firebase 설정
 // ================================================================
+const BUILD_VERSION  = '2026-10-30-final-1';
 const FIREBASE_CONFIG = {
     apiKey:            "AIzaSyC1l8qJ-bDh4pGELdmW8B5xiCCoVQNBrWE",
     authDomain:        "hanlim-target-dfd63.firebaseapp.com",
@@ -160,165 +158,274 @@ const FIREBASE_CONFIG = {
     messagingSenderId: "621470397001",
     appId:             "1:621470397001:web:a583503fd36fcb93c6c598"
 };
-const ADMIN_EMAIL    = 'eui.hyuk@hanlim.com';
-const DASHBOARD_URL  = 'dashboard.html';
-const THIS_URL       = 'https://cacaoworld93-hanlim.github.io/Hanlim-Target/login.html';
+const DASHBOARD_URL = 'dashboard.html';
+const LOGIN_URL = window.location.origin + window.location.pathname;
+const LOGOUT_MARKER_KEY = 'justLoggedOutAt';
+const EMAIL_STORAGE_KEY = 'emailForSignIn';
+const LOGOUT_GRACE_MS = 60 * 1000;
 
 // Firebase 초기화
 firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
-function revealLoginCard() {
-  document.body.classList.remove('auth-pending');
-}
-
-// ================================================================
-// 이미 로그인된 경우 대시보드로 이동
-// ================================================================
-
-// ★ sessionStorage로 로그아웃 상태 확인 (URL 파라미터보다 안전)
-const justLoggedOut = sessionStorage.getItem('justLoggedOut') === '1';
-if (justLoggedOut) {
-    sessionStorage.removeItem('justLoggedOut'); // 즉시 제거
-}
-
-auth.onAuthStateChanged(user => {
-  // ★ 방금 로그아웃했으면 자동 이동 차단 + 남은 세션 강제 정리
-  if (justLoggedOut) {
-    if (user) {
-      auth.signOut()
-        .catch(() => {})
-        .finally(() => revealLoginCard());
-    } else {
-      revealLoginCard();
-    }
-    return;
-  }
-  // 이메일 링크 처리 중이면 onAuthStateChanged로 자동 이동하지 않음
-  if (firebase.auth().isSignInWithEmailLink(window.location.href)) {
-    revealLoginCard();
-    return;
-  }
-  if (user) {
-    const email = user.email || '';
-    if (email.endsWith('@hanlim.com')) {
-      window.location.replace(DASHBOARD_URL);
-      return;
-    }
-  }
-  revealLoginCard();
+console.log('[Hanlim Login] build:', BUILD_VERSION);
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => {
+  console.warn('Auth persistence 설정 실패:', err && err.message ? err.message : err);
 });
 
-// ================================================================
-// 이메일 링크 처리 (메일에서 링크 클릭 시)
-// ================================================================
-if (firebase.auth().isSignInWithEmailLink(window.location.href)) {
-  let email = localStorage.getItem('emailForSignIn');
-  if (email) {
-    // localStorage에 이메일이 있으면 바로 로그인 처리
-    processEmailLink(email);
+const isEmailLink = firebase.auth().isSignInWithEmailLink(window.location.href);
+const logoutMarkerRaw = sessionStorage.getItem(LOGOUT_MARKER_KEY);
+const justLoggedOut = !!logoutMarkerRaw && (Date.now() - Number(logoutMarkerRaw) < LOGOUT_GRACE_MS);
+if (logoutMarkerRaw) {
+  sessionStorage.removeItem(LOGOUT_MARKER_KEY);
+}
+
+let currentMode = isEmailLink ? 'confirm' : 'send';
+let isBusy = false;
+
+const msgBox = document.getElementById('msgBox');
+const formBox = document.getElementById('formBox');
+const sentBox = document.getElementById('sentBox');
+const emailInput = document.getElementById('emailInput');
+const sendBtn = document.getElementById('sendBtn');
+const sentEmail = document.getElementById('sentEmail');
+
+function showMsg(text, type) {
+  msgBox.textContent = text;
+  msgBox.className = 'msg-box ' + type;
+}
+
+function hideMsg() {
+  msgBox.textContent = '';
+  msgBox.className = 'msg-box';
+}
+
+function getButtonLabel() {
+  return currentMode === 'confirm' ? '로그인 확인' : '로그인 링크 전송';
+}
+
+function setBusy(flag, label) {
+  isBusy = flag;
+  sendBtn.disabled = flag;
+  sendBtn.textContent = flag ? label : getButtonLabel();
+}
+
+function isHanlimEmail(email) {
+  return /^[^\s@]+@hanlim\.com$/i.test(email || '');
+}
+
+function normalizeEmail(value) {
+  return (value || '').trim().toLowerCase();
+}
+
+function setSendMode(options) {
+  options = options || {};
+  currentMode = 'send';
+  formBox.classList.remove('hidden');
+  sentBox.classList.remove('visible');
+  sendBtn.onclick = function(event) {
+    if (event) event.preventDefault();
+    handlePrimaryAction();
+    return false;
+  };
+  setBusy(false);
+  if (typeof options.prefill === 'string') {
+    emailInput.value = options.prefill;
+  }
+  if (options.keepMessage) {
+    // 기존 메시지 유지
+  } else if (options.message) {
+    showMsg(options.message, options.messageType || 'info');
   } else {
-    // localStorage에 이메일이 없으면 UI 입력폼으로 안내 (prompt 대신)
-    showEmailConfirmForm();
+    hideMsg();
   }
 }
 
-function processEmailLink(email) {
-  showMsg('로그인 처리 중...', 'info');
-  auth.signInWithEmailLink(email, window.location.href)
-    .then(result => {
-      localStorage.removeItem('emailForSignIn');
-      db.collection('visitLogs').add({
-        email: result.user.email,
-        name: result.user.displayName || '',
-        loginAt: firebase.firestore.FieldValue.serverTimestamp(),
-        userAgent: navigator.userAgent
-      }).catch(() => {});
-      window.location.href = DASHBOARD_URL;
-    })
-    .catch(err => {
-      console.error(err);
-      showMsg('로그인 실패: ' + err.message + ' — 이메일을 확인하고 다시 시도해주세요.', 'error');
-      document.getElementById('formBox').classList.remove('hidden');
-    });
-}
-
-function showEmailConfirmForm() {
-  document.getElementById('formBox').classList.remove('hidden');
-  showMsg('보안을 위해 이메일 주소를 다시 입력해주세요.', 'info');
-  const btn = document.getElementById('sendBtn');
-  btn.textContent = '로그인 확인';
-  btn.onclick = function() {
-    const email = document.getElementById('emailInput').value.trim().toLowerCase();
-    if (!email) { showMsg('이메일을 입력해주세요.', 'error'); return; }
-    if (!email.endsWith('@hanlim.com')) { showMsg('@hanlim.com 이메일만 사용 가능합니다.', 'error'); return; }
-    processEmailLink(email);
+function setConfirmMode(options) {
+  options = options || {};
+  currentMode = 'confirm';
+  formBox.classList.remove('hidden');
+  sentBox.classList.remove('visible');
+  sendBtn.onclick = function(event) {
+    if (event) event.preventDefault();
+    handlePrimaryAction();
+    return false;
   };
+  setBusy(false);
+  if (typeof options.prefill === 'string') {
+    emailInput.value = options.prefill;
+  }
+  showMsg(
+    options.message || '보안을 위해 로그인에 사용한 이메일 주소를 다시 입력해주세요. 같은 브라우저에서 링크를 열면 재입력 없이 바로 로그인됩니다.',
+    options.messageType || 'info'
+  );
 }
 
-// ================================================================
-// 로그인 링크 전송
-// ================================================================
-function sendLoginLink() {
-  const email = document.getElementById('emailInput').value.trim().toLowerCase();
+function showSentState(email) {
+  formBox.classList.add('hidden');
+  sentBox.classList.add('visible');
+  sentEmail.textContent = email;
+  hideMsg();
+  setBusy(false);
+}
+
+function getFriendlyError(err, fallbackPrefix) {
+  const code = err && err.code ? err.code : '';
+  if (code === 'auth/quota-exceeded') {
+    return '이메일 링크 발송 한도를 초과했습니다. Firebase 발송 quota가 초기화된 뒤 다시 시도해주세요.';
+  }
+  if (code === 'auth/invalid-email') {
+    return '이메일 형식이 올바르지 않습니다.';
+  }
+  if (code === 'auth/invalid-action-code' || code === 'auth/expired-action-code') {
+    return '로그인 링크가 만료되었거나 이미 사용되었습니다. 새 로그인 링크를 다시 받아주세요.';
+  }
+  if (code === 'auth/user-disabled') {
+    return '해당 계정은 사용할 수 없습니다.';
+  }
+  const msg = err && err.message ? err.message : '알 수 없는 오류가 발생했습니다.';
+  return fallbackPrefix ? (fallbackPrefix + ': ' + msg) : msg;
+}
+
+async function saveVisitLog(user) {
+  try {
+    await db.collection('visitLogs').add({
+      email: user.email || '',
+      name: user.displayName || '',
+      loginAt: firebase.firestore.FieldValue.serverTimestamp(),
+      userAgent: navigator.userAgent,
+      buildVersion: BUILD_VERSION
+    });
+  } catch (e) {
+    console.warn('visitLogs 저장 실패:', e && e.message ? e.message : e);
+  }
+}
+
+async function completeEmailLinkSignIn(email) {
+  const normalized = normalizeEmail(email);
+  if (!isHanlimEmail(normalized)) {
+    setConfirmMode({
+      prefill: normalized,
+      message: '@hanlim.com 이메일 주소를 정확히 입력해주세요.',
+      messageType: 'error'
+    });
+    return;
+  }
+
+  setBusy(true, '로그인 처리 중...');
+  showMsg('로그인 처리 중...', 'info');
+
+  try {
+    const result = await auth.signInWithEmailLink(normalized, window.location.href);
+    localStorage.removeItem(EMAIL_STORAGE_KEY);
+    sessionStorage.removeItem(LOGOUT_MARKER_KEY);
+    await saveVisitLog(result.user || {});
+    window.location.replace(DASHBOARD_URL);
+  } catch (err) {
+    console.error('signInWithEmailLink 실패:', err);
+    setConfirmMode({
+      prefill: normalized,
+      message: getFriendlyError(err, '로그인 실패'),
+      messageType: 'error'
+    });
+  }
+}
+
+function handlePrimaryAction() {
+  if (isBusy) return;
+  const email = normalizeEmail(emailInput.value);
 
   if (!email) {
     showMsg('이메일을 입력해주세요.', 'error');
     return;
   }
-  if (!email.endsWith('@hanlim.com')) {
+  if (!isHanlimEmail(email)) {
     showMsg('@hanlim.com 이메일만 사용 가능합니다.', 'error');
     return;
   }
 
-  const btn = document.getElementById('sendBtn');
-  btn.disabled = true;
-  btn.textContent = '전송 중...';
+  if (currentMode === 'confirm') {
+    completeEmailLinkSignIn(email);
+  } else {
+    sendLoginLink(email);
+  }
+}
+
+async function sendLoginLink(emailArg) {
+  const email = normalizeEmail(emailArg || emailInput.value);
+  if (!isHanlimEmail(email)) {
+    showMsg('@hanlim.com 이메일만 사용 가능합니다.', 'error');
+    return;
+  }
+
+  setBusy(true, '전송 중...');
 
   const actionCodeSettings = {
-    url: THIS_URL,
+    url: LOGIN_URL,
     handleCodeInApp: true
   };
 
-  auth.sendSignInLinkToEmail(email, actionCodeSettings)
-    .then(() => {
-      localStorage.setItem('emailForSignIn', email);
-      document.getElementById('formBox').classList.add('hidden');
-      document.getElementById('sentBox').classList.add('visible');
-      document.getElementById('sentEmail').textContent = email;
-    })
-    .catch(err => {
-      console.error(err);
-      btn.disabled = false;
-      btn.textContent = '로그인 링크 전송';
-      showMsg('전송 실패: ' + err.message, 'error');
-    });
+  try {
+    await auth.sendSignInLinkToEmail(email, actionCodeSettings);
+    localStorage.setItem(EMAIL_STORAGE_KEY, email);
+    showSentState(email);
+  } catch (err) {
+    console.error('sendSignInLinkToEmail 실패:', err);
+    setBusy(false);
+    showMsg(getFriendlyError(err, '전송 실패'), 'error');
+  }
 }
 
 function resetForm() {
-  document.getElementById('formBox').classList.remove('hidden');
-  document.getElementById('sentBox').classList.remove('visible');
-  document.getElementById('sendBtn').disabled = false;
-  document.getElementById('sendBtn').textContent = '로그인 링크 전송';
-  document.getElementById('emailInput').value = '';
-  hideMsg();
+  localStorage.removeItem(EMAIL_STORAGE_KEY);
+  emailInput.value = '';
+  setSendMode();
 }
 
-function showMsg(text, type) {
-  const box = document.getElementById('msgBox');
-  box.textContent = text;
-  box.className = 'msg-box ' + type;
-}
-function hideMsg() {
-  const box = document.getElementById('msgBox');
-  box.className = 'msg-box';
-}
-
-// 엔터키
-document.getElementById('emailInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') sendLoginLink();
+emailInput.addEventListener('keydown', event => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    handlePrimaryAction();
+  }
 });
+
+sendBtn.onclick = function(event) {
+  if (event) event.preventDefault();
+  handlePrimaryAction();
+  return false;
+};
+
+// 이미 로그인된 경우 대시보드로 이동
+// 단, 방금 로그아웃했거나 이메일 링크 처리 중이면 자동 이동하지 않음
+auth.onAuthStateChanged(user => {
+  if (justLoggedOut) {
+    if (user) {
+      auth.signOut().catch(() => {});
+    }
+    return;
+  }
+
+  if (isEmailLink) {
+    return;
+  }
+
+  if (user && isHanlimEmail(user.email || '')) {
+    window.location.replace(DASHBOARD_URL);
+  }
+});
+
+if (isEmailLink) {
+  const storedEmail = normalizeEmail(localStorage.getItem(EMAIL_STORAGE_KEY) || '');
+  if (storedEmail) {
+    emailInput.value = storedEmail;
+    completeEmailLinkSignIn(storedEmail);
+  } else {
+    setConfirmMode();
+  }
+} else {
+  setSendMode();
+}
 </script>
 </body>
 </html>
