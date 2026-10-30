@@ -168,7 +168,14 @@ const db   = firebase.firestore();
 // ================================================================
 // 이미 로그인된 경우 대시보드로 이동
 // ================================================================
+const urlParams = new URLSearchParams(window.location.search);
+const isLogout = urlParams.get('logout') === '1';
+
 auth.onAuthStateChanged(user => {
+  if (isLogout) {
+    // 로그아웃 후 리디렉션된 경우 자동 이동 하지 않음
+    return;
+  }
   if (user) {
     const email = user.email || '';
     if (email.endsWith('@hanlim.com') && user.emailVerified) {
