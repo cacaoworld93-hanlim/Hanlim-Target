@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>판매 마감 현황 2026</title>
-<!-- build: 2026-10-30-final-3 -->
+<!-- build: 2026-10-30-admin-tabs-fix -->
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -28,12 +28,12 @@ body{font-family:var(--font);background:#f1f5f9;color:var(--fg);font-size:14px;m
 .hdr-info{display:flex;flex-direction:column;gap:2px}
 .hdr-title{font-size:15px;font-weight:600;color:var(--fg)}
 .uptime{font-size:11px;color:#6b7280}
-.hdr-r{display:flex;align-items:center;gap:8px}
+.hdr-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .ubadge{background:#e0e7ff;color:#3730a3;font-size:11px;font-weight:600;padding:4px 10px;border-radius:12px}
 
 /* 탭 */
-.tabs{background:var(--bg);display:flex;gap:0;border-bottom:1px solid var(--bdr);position:sticky;top:56px;z-index:999;pointer-events:auto}
-.tab{background:transparent;border:none;padding:12px 18px;font-size:13px;font-weight:500;color:#6b7280;cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;pointer-events:auto;position:relative;z-index:1000}
+.tabs{background:var(--bg);display:flex;gap:0;border-bottom:1px solid var(--bdr);position:relative;top:0;z-index:20;pointer-events:auto;flex-wrap:wrap}
+.tab{background:transparent;border:none;padding:12px 18px;font-size:13px;font-weight:500;color:#6b7280;cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;pointer-events:auto;position:relative;z-index:30;touch-action:manipulation}
 .tab:hover{color:var(--fg);background:#f9fafb}
 .tab.on{color:var(--pri);border-bottom-color:var(--pri);background:#f0f9ff}
 
@@ -184,7 +184,7 @@ firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
-console.log('[Hanlim Dashboard] build:', BUILD_VERSION);
+console.log('[Hanlim Dashboard] build:', BUILD_VERSION, 'admin-tabs-fix');
 
 // ── Firebase Auth 로그인 상태 확인 ───────────────────────────────
 let currentUser = null;
@@ -217,10 +217,12 @@ function showAdminUI() {
         if (csvSec) csvSec.style.display = 'block';
 
         const tabEdit = document.getElementById('tabEdit');
-        if (tabEdit) tabEdit.style.display = 'inline-block';
+        if (tabEdit) tabEdit.style.display = '';
+        bindTabs();
 
         const tabLogs = document.getElementById('tabLogs');
-        if (tabLogs) tabLogs.style.display = 'inline-block';
+        if (tabLogs) tabLogs.style.display = '';
+        bindTabs();
 
         if (typeof loadVisitLogs === 'function') {
             loadVisitLogs();
@@ -241,6 +243,9 @@ function hideAdminUI() {
 
         const tabLogs = document.getElementById('tabLogs');
         if (tabLogs) tabLogs.style.display = 'none';
+
+        const activeAdminPane = document.querySelector('#pane-edit.on, #pane-logs.on');
+        if (activeAdminPane) activateTab('dashboard');
     });
 }
 
@@ -338,10 +343,10 @@ async function logout() {
   </div>
 </div>
 
-<div class="tabs">
-  <button class="tab on" onclick="switchTab(event, 'dashboard')">📊 대시보드</button>
-  <button class="tab" id="tabEdit" onclick="switchTab(event, 'edit')" style="display:none">⚙️ 입력</button>
-  <button class="tab" id="tabLogs" onclick="switchTab(event, 'logs')" style="display:none">📋 방문 로그</button>
+<div class="tabs" id="mainTabs">
+  <button type="button" class="tab on" id="tabDashboard" data-pane="dashboard">📊 대시보드</button>
+  <button type="button" class="tab" id="tabEdit" data-pane="edit" style="display:none">⚙️ 입력</button>
+  <button type="button" class="tab" id="tabLogs" data-pane="logs" style="display:none">📋 방문 로그</button>
 </div>
 
 <div class="content">
@@ -663,20 +668,50 @@ async function logout() {
 
 <script>
 // ── 메인 대시보드 JS
-// build: 2026-10-30-password-only-patched ──────────────────────────────────────────────
+// build: 2026-10-30-admin-tabs-fix ──────────────────────────────────────────────
 const currentMonth = 10;
 const monthGoals = {"1": {"hanlim": 20802000000, "pfizer": 2500000000, "eyes": 5200000000}, "2": {"hanlim": 19902000000, "pfizer": 2000000000, "eyes": 5200000000}, "3": {"hanlim": 21300000000, "pfizer": 2360000000, "eyes": 5600000000}, "4": {"hanlim": 21800000000, "pfizer": 2450000000, "eyes": 6500000000}, "5": {"hanlim": 20590000000, "pfizer": 2250000000, "eyes": 6400000000}, "6": {"hanlim": 21970000000, "pfizer": 2400000000, "eyes": 5900000000}, "7": {"hanlim": 23760000000, "pfizer": 2650000000, "eyes": 6000000000}, "8": {"hanlim": 21260000000, "pfizer": 2090000000, "eyes": 6000000000}, "9": {"hanlim": 23268000000, "pfizer": 2300000000, "eyes": 6100000000}, "10": {"hanlim": 23648000000, "pfizer": 2550000000, "eyes": 6000000000}, "11": {"hanlim": 24110000000, "pfizer": 2100000000, "eyes": 5500000000}, "12": {"hanlim": 23550000000, "pfizer": 1850000000, "eyes": 5600000000}};
 
 let savedData = {};
 
 // 탭 전환
-function switchTab(e, pane) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
-  document.querySelectorAll('.pane').forEach(p => p.classList.remove('on'));
-  e.currentTarget.classList.add('on');
-  const paneEl = document.getElementById('pane-' + pane);
-  if (paneEl) paneEl.classList.add('on');
+function activateTab(pane) {
+  document.querySelectorAll('.tab').forEach(btn => btn.classList.remove('on'));
+  document.querySelectorAll('.pane').forEach(section => section.classList.remove('on'));
+
+  const activeBtn = document.querySelector('.tab[data-pane="' + pane + '"]');
+  const activePane = document.getElementById('pane-' + pane);
+
+  if (activeBtn) activeBtn.classList.add('on');
+  if (activePane) activePane.classList.add('on');
+
+  if (pane === 'logs' && currentUser && currentUser.email === ADMIN_EMAIL && typeof loadVisitLogs === 'function') {
+    loadVisitLogs();
+  }
 }
+
+function switchTabByName(pane) {
+  activateTab(pane);
+}
+
+function switchTab(e, pane) {
+  if (e && typeof e.preventDefault === 'function') {
+    e.preventDefault();
+  }
+  activateTab(pane);
+}
+
+function bindTabs() {
+  document.querySelectorAll('.tab[data-pane]').forEach(btn => {
+    if (btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', function(ev) {
+      ev.preventDefault();
+      activateTab(this.dataset.pane);
+    });
+  });
+}
+
 
 function fmtWon(v) {
   if (!v && v !== 0) return '0';
@@ -1249,6 +1284,8 @@ function formatNumber(num) {
 
 // ── 페이지 로드 ───────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', function() {
+    bindTabs();
+    activateTab('dashboard');
     // 사용자 정보 표시
     if (currentUser) {
         const badge = document.getElementById('userBadge');
@@ -1266,9 +1303,11 @@ window.addEventListener('DOMContentLoaded', function() {
             if (csvSec) csvSec.style.display = 'block';
             // 관리자 탭 표시
             const tabEdit = document.getElementById('tabEdit');
-            if (tabEdit) tabEdit.style.display = 'inline-block';
+            if (tabEdit) tabEdit.style.display = '';
+        bindTabs();
             const tabLogs = document.getElementById('tabLogs');
-            if (tabLogs) tabLogs.style.display = 'inline-block';
+            if (tabLogs) tabLogs.style.display = '';
+        bindTabs();
             // 방문 로그 로드
             loadVisitLogs();
         }
