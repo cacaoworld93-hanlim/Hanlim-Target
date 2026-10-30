@@ -162,10 +162,14 @@ const db   = firebase.firestore();
 
 // ── Firebase Auth 로그인 상태 확인 ───────────────────────────────
 let currentUser = null;
+let isLoggingOut = false; // ★ 로그아웃 진행 중 플래그 (onAuthStateChanged 오작동 방지)
 
 auth.onAuthStateChanged(user => {
+    // ★ 로그아웃 진행 중이면 절대 redirect 하지 않음
+    if (isLoggingOut) return;
+
     if (!user || !user.email || !user.email.endsWith('@hanlim.com')) {
-        window.location.href = 'login.html';
+        window.location.replace('login.html');
         return;
     }
     currentUser = { email: user.email, name: user.displayName || '' };
@@ -191,11 +195,18 @@ auth.onAuthStateChanged(user => {
 // ── 로그아웃 ──────────────────────────────────────────────────────
 function logout() {
     if (confirm('정말 로그아웃 하시겠습니까?')) {
-        // signOut 전에 즉시 이동하여 onAuthStateChanged 재트리거 방지
+        isLoggingOut = true; // ★ 플래그 ON → onAuthStateChanged의 redirect 완전 차단
+
+        // ★ sessionStorage에 로그아웃 상태 기록 → login.html이 읽어서 자동 이동 방지
+        sessionStorage.setItem('justLoggedOut', '1');
+
         auth.signOut()
-            .catch(err => { console.error('로그아웃 오류:', err); })
+            .catch(err => {
+                console.error('로그아웃 오류:', err);
+                isLoggingOut = false; // 실패 시 플래그 해제
+            })
             .finally(() => {
-                window.location.replace('login.html?logout=1');
+                window.location.replace('login.html');
             });
     }
 }
