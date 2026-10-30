@@ -398,22 +398,48 @@ async function logout() {
     </div>
       <div style="background:#f9fafb;border-radius:8px;padding:16px 20px;border:1px solid #d1d5db;margin-top:14px;">
         <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:14px;text-align:center;">한림(제약+MS+화이자) + 눈건강 합계</div>
-        <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-end;justify-content:center;">
-          <div style="text-align:center;">
-            <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">합계 목표</div>
-            <div style="font-size:15px;font-weight:700;color:#111827;" id="ds_total_goal">-</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;">
+          <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;">
+            <div style="font-size:13px;font-weight:700;color:#2563eb;margin-bottom:10px;">수정목표 기준</div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px;align-items:end;">
+              <div>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">합계 목표</div>
+                <div style="font-size:15px;font-weight:700;color:#111827;" id="ds_total_goal">-</div>
+              </div>
+              <div>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">합계 실적</div>
+                <div style="font-size:15px;font-weight:700;color:#111827;" id="ds_total_actual">-</div>
+              </div>
+              <div>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">남은금액</div>
+                <div style="font-size:15px;font-weight:700;" id="ds_total_remain">-</div>
+              </div>
+              <div>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">달성율</div>
+                <div style="font-size:24px;font-weight:800;color:#2563eb;" id="ds_total_pct">-</div>
+              </div>
+            </div>
           </div>
-          <div style="text-align:center;">
-            <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">합계 실적</div>
-            <div style="font-size:15px;font-weight:700;color:#111827;" id="ds_total_actual">-</div>
-          </div>
-          <div style="text-align:center;">
-            <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">남은금액</div>
-            <div style="font-size:15px;font-weight:700;" id="ds_total_remain">-</div>
-          </div>
-          <div style="text-align:center;">
-            <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">달성율</div>
-            <div style="font-size:24px;font-weight:800;color:#2563eb;" id="ds_total_pct">-</div>
+          <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;">
+            <div style="font-size:13px;font-weight:700;color:#7c3aed;margin-bottom:10px;">원래목표 기준</div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px;align-items:end;">
+              <div>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">합계 목표</div>
+                <div style="font-size:15px;font-weight:700;color:#111827;" id="ds_total_orig_goal">-</div>
+              </div>
+              <div>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">합계 실적</div>
+                <div style="font-size:15px;font-weight:700;color:#111827;" id="ds_total_orig_actual">-</div>
+              </div>
+              <div>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">남은금액</div>
+                <div style="font-size:15px;font-weight:700;" id="ds_total_orig_remain">-</div>
+              </div>
+              <div>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">달성율</div>
+                <div style="font-size:24px;font-weight:800;color:#7c3aed;" id="ds_total_orig_pct">-</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -447,7 +473,7 @@ async function logout() {
 
     <div class="sec">
       <div class="sttl">목표 대비 달성률</div>
-      <div style="display:flex;gap:40px;justify-content:center;flex-wrap:wrap;padding:16px 0;">
+      <div style="display:flex;gap:32px;justify-content:center;flex-wrap:wrap;padding:16px 0;">
 
         <div style="text-align:center;">
           <svg width="180" height="180" viewBox="0 0 200 200">
@@ -484,8 +510,21 @@ async function logout() {
             <text x="100" y="94" text-anchor="middle" font-size="30" font-weight="800" fill="#111827" id="donut_total_pct">0%</text>
             <text x="100" y="118" text-anchor="middle" font-size="13" fill="#6b7280">달성</text>
           </svg>
-          <div style="font-size:14px;font-weight:700;color:#111827;margin-top:6px;">한림 + 눈건강 합계</div>
+          <div style="font-size:14px;font-weight:700;color:#111827;margin-top:6px;">한림 + 눈건강 합계 (수정목표)</div>
           <div style="font-size:12px;color:#6b7280;margin-top:3px;">목표 <span id="donut_total_goal_text" style="color:#111827;font-weight:600;">-</span>억 / 실적 <span id="donut_total_actual_text" style="color:#7c3aed;font-weight:600;">-</span>억</div>
+        </div>
+
+        <div style="text-align:center;">
+          <svg width="180" height="180" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="70" fill="none" stroke="#e5e7eb" stroke-width="24"/>
+            <circle id="donut_total_orig_arc" cx="100" cy="100" r="70" fill="none"
+              stroke="#db2777" stroke-width="24" stroke-dasharray="0 439.82"
+              stroke-linecap="round" transform="rotate(-90 100 100)"/>
+            <text x="100" y="94" text-anchor="middle" font-size="30" font-weight="800" fill="#111827" id="donut_total_orig_pct">0%</text>
+            <text x="100" y="118" text-anchor="middle" font-size="13" fill="#6b7280">달성</text>
+          </svg>
+          <div style="font-size:14px;font-weight:700;color:#111827;margin-top:6px;">한림 + 눈건강 합계 (원래목표)</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:3px;">목표 <span id="donut_total_orig_goal_text" style="color:#111827;font-weight:600;">-</span>억 / 실적 <span id="donut_total_orig_actual_text" style="color:#db2777;font-weight:600;">-</span>억</div>
         </div>
 
       </div>
@@ -792,9 +831,12 @@ function resetDashboardDisplay(m) {
     'ds_total_goal': fmtWon(totalGoal),
     'ds_total_actual': fmtWon(0),
     'ds_total_remain': fmtWon(totalGoal),
+    'ds_total_orig_goal': fmtWon(totalGoal),
+    'ds_total_orig_actual': fmtWon(0),
+    'ds_total_orig_remain': fmtWon(totalGoal),
     'ds_jeyak_total': fmtWon(0),
     'ds_ms_total': fmtWon(0),
-    'ds_eyes_total': fmtWon(0)
+    'ds_eyes_total_d': fmtWon(0)
   };
   Object.keys(idsHtml).forEach(function(id) {
     var el = document.getElementById(id);
@@ -803,15 +845,19 @@ function resetDashboardDisplay(m) {
 
   var idsText = {
     'ds_total_pct': '0%',
+    'ds_total_orig_pct': '0%',
     'donut_hanlim_pct': '0%',
     'donut_eyes_pct': '0%',
     'donut_total_pct': '0%',
+    'donut_total_orig_pct': '0%',
     'donut_hanlim_goal_text': (hanlimBaseGoal/100000000).toFixed(1),
     'donut_hanlim_actual_text': '0.0',
     'donut_eyes_goal_text': (eyesBaseGoal/100000000).toFixed(1),
     'donut_eyes_actual_text': '0.0',
     'donut_total_goal_text': (totalGoal/100000000).toFixed(1),
-    'donut_total_actual_text': '0.0'
+    'donut_total_actual_text': '0.0',
+    'donut_total_orig_goal_text': (totalGoal/100000000).toFixed(1),
+    'donut_total_orig_actual_text': '0.0'
   };
   Object.keys(idsText).forEach(function(id) {
     var el = document.getElementById(id);
@@ -828,7 +874,7 @@ function resetDashboardDisplay(m) {
     }
   });
 
-  var arcIds = ['donut_hanlim_arc', 'donut_eyes_arc', 'donut_total_arc'];
+  var arcIds = ['donut_hanlim_arc', 'donut_eyes_arc', 'donut_total_arc', 'donut_total_orig_arc'];
   arcIds.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.setAttribute('stroke-dasharray', '0 439.82');
@@ -844,8 +890,10 @@ function resetDashboardDisplay(m) {
     var el = document.getElementById(id);
     if (el) el.classList.remove('deficit', 'surplus');
   });
-  var tr = document.getElementById('ds_total_remain');
-  if (tr) tr.style.color = '#111827';
+  ['ds_total_remain', 'ds_total_orig_remain'].forEach(function(id) {
+    var tr = document.getElementById(id);
+    if (tr) tr.style.color = '#111827';
+  });
 }
 
 function loadInitialMonthDataFallback() {
@@ -887,6 +935,16 @@ function loadMonthGoals() {
   document.getElementById('adj_eyes_final').innerHTML = fmtWon(eyesBase);
 
   clearMonthEntryFields();
+
+  var adjHanlimCutEl = document.getElementById('adj_hanlim_cut');
+  var adjHanlimModEl = document.getElementById('adj_hanlim_mod');
+  var adjEyesCutEl = document.getElementById('adj_eyes_cut');
+  var adjEyesModEl = document.getElementById('adj_eyes_mod');
+  if (adjHanlimCutEl) adjHanlimCutEl.value = '';
+  if (adjEyesCutEl) adjEyesCutEl.value = '';
+  if (adjHanlimModEl) adjHanlimModEl.value = hanlimBase;
+  if (adjEyesModEl) adjEyesModEl.value = eyesBase;
+
   updateEditTotal('jeyak');
   updateEditTotal('ms');
   updateEditTotal('eyes');
@@ -1067,17 +1125,14 @@ function restoreEditForm(m, d) {
     'ed_ms_jeonil','ed_ms_maljil','ed_ms_return',
     'ed_eyes_jeonil','ed_eyes_maljil','ed_eyes_return',
     'eg_pt_hanrim','eg_pt_eyes',
-    'goal_hanlim','goal_pfizer','goal_eyes',
-    'adj_hanlim_cut','adj_hanlim_mod','adj_eyes_cut','adj_eyes_mod'
+    'goal_hanlim','goal_pfizer','goal_eyes'
   ];
   const keyMap = {
     'ed_jeyak_jeonil':'d_jeyak_jeonil','ed_jeyak_maljil':'d_jeyak_maljil','ed_jeyak_return':'d_jeyak_return',
     'ed_ms_jeonil':'d_ms_jeonil','ed_ms_maljil':'d_ms_maljil','ed_ms_return':'d_ms_return',
     'ed_eyes_jeonil':'d_eyes_jeonil','ed_eyes_maljil':'d_eyes_maljil','ed_eyes_return':'d_eyes_return',
     'eg_pt_hanrim':'pt_hanrim','eg_pt_eyes':'pt_eyes',
-    'goal_hanlim':'goal_hanlim','goal_pfizer':'goal_pfizer','goal_eyes':'goal_eyes',
-    'adj_hanlim_cut':'adj_hanlim_cut','adj_hanlim_mod':'adj_hanlim_mod',
-    'adj_eyes_cut':'adj_eyes_cut','adj_eyes_mod':'adj_eyes_mod'
+    'goal_hanlim':'goal_hanlim','goal_pfizer':'goal_pfizer','goal_eyes':'goal_eyes'
   };
   fields.forEach(id => {
     const el = document.getElementById(id);
@@ -1174,6 +1229,8 @@ function updateDashboard(m) {
   const totalGoal = hanlimGoal + eyesGoal;
   const totalActual = hanlimActual + eyesActual;
   const totalPct = totalGoal > 0 ? Math.round((totalActual / totalGoal) * 100) : 0;
+  const totalGoalOriginal = hanlimBaseGoal + eyesBaseGoal;
+  const totalPctOriginal = totalGoalOriginal > 0 ? Math.round((totalActual / totalGoalOriginal) * 100) : 0;
 
   // 합계 총괄
   const _tg = document.getElementById('ds_total_goal');
@@ -1182,6 +1239,13 @@ function updateDashboard(m) {
   if (_ta) _ta.innerHTML = fmtWon(totalActual);
   const _tp = document.getElementById('ds_total_pct');
   if (_tp) _tp.textContent = totalPct + '%';
+
+  const _tog = document.getElementById('ds_total_orig_goal');
+  if (_tog) _tog.innerHTML = fmtWon(totalGoalOriginal);
+  const _toa = document.getElementById('ds_total_orig_actual');
+  if (_toa) _toa.innerHTML = fmtWon(totalActual);
+  const _top = document.getElementById('ds_total_orig_pct');
+  if (_top) _top.textContent = totalPctOriginal + '%';
 
   // 도넛 차트 업데이트
   const _C = 2 * Math.PI * 70;
@@ -1202,7 +1266,7 @@ function updateDashboard(m) {
   const _dea2 = document.getElementById('donut_eyes_actual_text');
   if (_dea2) _dea2.textContent = (eyesActual/100000000).toFixed(1);
 
-  // 합계 도넛
+  // 합계 도넛 (수정목표)
   const _dta = document.getElementById('donut_total_arc');
   if (_dta) _dta.setAttribute('stroke-dasharray', (Math.min(totalPct/100,1)*_C).toFixed(2)+' '+_C.toFixed(2));
   const _dtp = document.getElementById('donut_total_pct');
@@ -1212,12 +1276,28 @@ function updateDashboard(m) {
   const _dta2 = document.getElementById('donut_total_actual_text');
   if (_dta2) _dta2.textContent = (totalActual/100000000).toFixed(1);
 
+  // 합계 도넛 (원래목표)
+  const _dtoa = document.getElementById('donut_total_orig_arc');
+  if (_dtoa) _dtoa.setAttribute('stroke-dasharray', (Math.min(totalPctOriginal/100,1)*_C).toFixed(2)+' '+_C.toFixed(2));
+  const _dtop = document.getElementById('donut_total_orig_pct');
+  if (_dtop) _dtop.textContent = totalPctOriginal + '%';
+  const _dtog = document.getElementById('donut_total_orig_goal_text');
+  if (_dtog) _dtog.textContent = (totalGoalOriginal/100000000).toFixed(1);
+  const _dtoa2 = document.getElementById('donut_total_orig_actual_text');
+  if (_dtoa2) _dtoa2.textContent = (totalActual/100000000).toFixed(1);
+
   // 합계 남은금액
   const totalRemain = totalGoal - totalActual;
   const _tr = document.getElementById('ds_total_remain');
   if (_tr) {
     _tr.innerHTML = fmtWon(Math.abs(totalRemain));
     _tr.style.color = totalRemain > 0 ? '#dc2626' : (totalRemain < 0 ? '#16a34a' : '#111827');
+  }
+  const totalRemainOriginal = totalGoalOriginal - totalActual;
+  const _tro = document.getElementById('ds_total_orig_remain');
+  if (_tro) {
+    _tro.innerHTML = fmtWon(Math.abs(totalRemainOriginal));
+    _tro.style.color = totalRemainOriginal > 0 ? '#dc2626' : (totalRemainOriginal < 0 ? '#16a34a' : '#111827');
   }
 
   // 말일결재 총계 (대시보드)
@@ -1500,8 +1580,6 @@ function handleCSVUpload(event) {
     const processText = (text) => {
         const normalized = text.replace(/^﻿/, '');
         const lines = normalized.split(/\r?\n/).filter(l => l.trim());
-?
-/).filter(l => l.trim());
         if (lines.length < 2) {
             statusEl.textContent = '❌ 데이터가 없습니다';
             return;
