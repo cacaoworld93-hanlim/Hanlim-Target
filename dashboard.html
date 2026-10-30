@@ -32,8 +32,8 @@ body{font-family:var(--font);background:#f1f5f9;color:var(--fg);font-size:14px;m
 .ubadge{background:#e0e7ff;color:#3730a3;font-size:11px;font-weight:600;padding:4px 10px;border-radius:12px}
 
 /* 탭 */
-.tabs{background:var(--bg);display:flex;gap:0;border-bottom:1px solid var(--bdr);position:sticky;top:56px;z-index:99}
-.tab{background:transparent;border:none;padding:12px 18px;font-size:13px;font-weight:500;color:#6b7280;cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s}
+.tabs{background:var(--bg);display:flex;gap:0;border-bottom:1px solid var(--bdr);position:sticky;top:56px;z-index:999;pointer-events:auto}
+.tab{background:transparent;border:none;padding:12px 18px;font-size:13px;font-weight:500;color:#6b7280;cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;pointer-events:auto;position:relative;z-index:1000}
 .tab:hover{color:var(--fg);background:#f9fafb}
 .tab.on{color:var(--pri);border-bottom-color:var(--pri);background:#f0f9ff}
 
@@ -742,6 +742,101 @@ function syncAdj(type, field) {
   finalEl.innerHTML = fmtWon(effective);
 }
 
+
+function resetDashboardDisplay(m) {
+  var mg = monthGoals[m];
+  if (!mg) return;
+  var hanlimBaseGoal = (mg.hanlim || 0) + (mg.pfizer || 0);
+  var eyesBaseGoal = mg.eyes || 0;
+  var totalGoal = hanlimBaseGoal + eyesBaseGoal;
+
+  var idsHtml = {
+    'ds_hanrim_goal': fmtWon(hanlimBaseGoal),
+    'ds_hanrim_actual': fmtWon(0),
+    'ds_hanrim_remain': fmtWon(hanlimBaseGoal),
+    'ds_eyes_goal': fmtWon(eyesBaseGoal),
+    'ds_eyes_actual': fmtWon(0),
+    'ds_eyes_remain': fmtWon(eyesBaseGoal),
+    'ds_total_goal': fmtWon(totalGoal),
+    'ds_total_actual': fmtWon(0),
+    'ds_total_remain': fmtWon(totalGoal),
+    'ds_jeyak_total': fmtWon(0),
+    'ds_ms_total': fmtWon(0),
+    'ds_eyes_total': fmtWon(0)
+  };
+  Object.keys(idsHtml).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = idsHtml[id];
+  });
+
+  var idsText = {
+    'ds_total_pct': '0%',
+    'donut_hanlim_pct': '0%',
+    'donut_eyes_pct': '0%',
+    'donut_total_pct': '0%',
+    'donut_hanlim_goal_text': (hanlimBaseGoal/100000000).toFixed(1),
+    'donut_hanlim_actual_text': '0.0',
+    'donut_eyes_goal_text': (eyesBaseGoal/100000000).toFixed(1),
+    'donut_eyes_actual_text': '0.0',
+    'donut_total_goal_text': (totalGoal/100000000).toFixed(1),
+    'donut_total_actual_text': '0.0'
+  };
+  Object.keys(idsText).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = idsText[id];
+  });
+
+  var barIds = ['ds_hanrim_bar', 'ds_eyes_bar'];
+  barIds.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.style.width = '0%';
+      var txt = el.querySelector('.pgtxt');
+      if (txt) txt.textContent = '0%';
+    }
+  });
+
+  var arcIds = ['donut_hanlim_arc', 'donut_eyes_arc', 'donut_total_arc'];
+  arcIds.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.setAttribute('stroke-dasharray', '0 439.82');
+  });
+
+  var noticeEl = document.getElementById('notice-bar') || document.querySelector('.notice');
+  if (noticeEl) {
+    noticeEl.innerHTML = '';
+    noticeEl.style.display = 'none';
+  }
+
+  ['ds_hanrim_remain', 'ds_eyes_remain'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('deficit', 'surplus');
+  });
+  var tr = document.getElementById('ds_total_remain');
+  if (tr) tr.style.color = '#111827';
+}
+
+function loadInitialMonthDataFallback() {
+  if (!db) return;
+  for (let m = 1; m <= 12; m++) {
+    db.collection('dashboardState').doc('month_' + m).get().then(function(doc) {
+      if (doc.exists) {
+        savedData[m] = doc.data();
+        var current = parseInt(document.getElementById('month-select') ? document.getElementById('month-select').value : currentMonth, 10);
+        if (m === current) {
+          loadMonthGoals();
+          updateDashboard(m);
+          if (currentUser && currentUser.email === ADMIN_EMAIL) {
+            restoreEditForm(m, doc.data());
+          }
+        }
+      }
+    }).catch(function(err) {
+      console.warn('월 데이터 초기 조회 실패 month_' + m + ':', err.message);
+    });
+  }
+}
+
 function loadMonthGoals() {
   var m = parseInt(document.getElementById('month-select').value, 10);
   var g = monthGoals[m];
@@ -760,48 +855,52 @@ function loadMonthGoals() {
   document.getElementById('adj_eyes_final').innerHTML = fmtWon(eyesBase);
 
   clearMonthEntryFields();
+  updateEditTotal('jeyak');
+  updateEditTotal('ms');
+  updateEditTotal('eyes');
 
   var d = getStoredMonthData(m);
-  if (d) {
-    [
-      ['ed_jeyak_jeonil','d_jeyak_jeonil'],['ed_jeyak_maljil','d_jeyak_maljil'],
-      ['ed_jeyak_return','d_jeyak_return'],['ed_ms_jeonil','d_ms_jeonil'],
-      ['ed_ms_maljil','d_ms_maljil'],['ed_ms_return','d_ms_return'],
-      ['ed_eyes_jeonil','d_eyes_jeonil'],['ed_eyes_maljil','d_eyes_maljil'],
-      ['ed_eyes_return','d_eyes_return'],['eg_pt_hanrim','pt_hanrim'],
-      ['eg_pt_eyes','pt_eyes']
-    ].forEach(function(pair) {
-      var el = document.getElementById(pair[0]);
-      if (el && d[pair[1]] !== undefined && d[pair[1]] !== null && d[pair[1]] !== 0) {
-        el.value = d[pair[1]];
-      }
-    });
-
-    if (d.adj_hanlim_mod !== undefined && d.adj_hanlim_mod !== null && d.adj_hanlim_mod !== '') {
-      document.getElementById('adj_hanlim_mod').value = d.adj_hanlim_mod;
-      syncAdj('hanlim', 'mod');
-    } else if (d.adj_hanlim_cut !== undefined && d.adj_hanlim_cut !== null && d.adj_hanlim_cut !== '') {
-      document.getElementById('adj_hanlim_cut').value = d.adj_hanlim_cut;
-      syncAdj('hanlim', 'cut');
-    }
-
-    if (d.adj_eyes_mod !== undefined && d.adj_eyes_mod !== null && d.adj_eyes_mod !== '') {
-      document.getElementById('adj_eyes_mod').value = d.adj_eyes_mod;
-      syncAdj('eyes', 'mod');
-    } else if (d.adj_eyes_cut !== undefined && d.adj_eyes_cut !== null && d.adj_eyes_cut !== '') {
-      document.getElementById('adj_eyes_cut').value = d.adj_eyes_cut;
-      syncAdj('eyes', 'cut');
-    }
-
-    updateDashboard(m);
-  } else {
-    const noticeEl = document.getElementById('notice-bar') || document.querySelector('.notice');
-    if (noticeEl) {
-      noticeEl.innerHTML = '';
-      noticeEl.style.display = 'none';
-    }
+  if (!d) {
+    resetDashboardDisplay(m);
+    return;
   }
+
+  [
+    ['ed_jeyak_jeonil','d_jeyak_jeonil'],['ed_jeyak_maljil','d_jeyak_maljil'],
+    ['ed_jeyak_return','d_jeyak_return'],['ed_ms_jeonil','d_ms_jeonil'],
+    ['ed_ms_maljil','d_ms_maljil'],['ed_ms_return','d_ms_return'],
+    ['ed_eyes_jeonil','d_eyes_jeonil'],['ed_eyes_maljil','d_eyes_maljil'],
+    ['ed_eyes_return','d_eyes_return'],['eg_pt_hanrim','pt_hanrim'],
+    ['eg_pt_eyes','pt_eyes']
+  ].forEach(function(pair) {
+    var el = document.getElementById(pair[0]);
+    if (el && d[pair[1]] !== undefined && d[pair[1]] !== null && d[pair[1]] !== 0) {
+      el.value = d[pair[1]];
+    }
+  });
+
+  if (d.adj_hanlim_mod !== undefined && d.adj_hanlim_mod !== null && d.adj_hanlim_mod !== '') {
+    document.getElementById('adj_hanlim_mod').value = d.adj_hanlim_mod;
+    syncAdj('hanlim', 'mod');
+  } else if (d.adj_hanlim_cut !== undefined && d.adj_hanlim_cut !== null && d.adj_hanlim_cut !== '') {
+    document.getElementById('adj_hanlim_cut').value = d.adj_hanlim_cut;
+    syncAdj('hanlim', 'cut');
+  }
+
+  if (d.adj_eyes_mod !== undefined && d.adj_eyes_mod !== null && d.adj_eyes_mod !== '') {
+    document.getElementById('adj_eyes_mod').value = d.adj_eyes_mod;
+    syncAdj('eyes', 'mod');
+  } else if (d.adj_eyes_cut !== undefined && d.adj_eyes_cut !== null && d.adj_eyes_cut !== '') {
+    document.getElementById('adj_eyes_cut').value = d.adj_eyes_cut;
+    syncAdj('eyes', 'cut');
+  }
+
+  updateEditTotal('jeyak');
+  updateEditTotal('ms');
+  updateEditTotal('eyes');
+  updateDashboard(m);
 }
+
 
 // 월 선택 시 목표값 로드
 // loadMonthGoals replaced above
@@ -884,6 +983,8 @@ function startRealtimeSync() {
     unsubscribeDashboardState = null;
   }
 
+  resetDashboardDisplay(m);
+
   unsubscribeDashboardState = db.collection('dashboardState').doc('month_' + m)
     .onSnapshot(doc => {
       if (doc.exists) {
@@ -910,17 +1011,22 @@ function startRealtimeSync() {
       } else {
         delete savedData[m];
         loadMonthGoals();
+        resetDashboardDisplay(m);
+        const lu = document.getElementById('last-update');
+        if (lu) lu.textContent = '-';
       }
     }, err => {
       console.warn('실시간 동기화 오류:', err.message);
     });
 }
 
+
 // 월 변경 시 새 구독
 function onMonthChange() {
   loadMonthGoals();
   if (db) startRealtimeSync();
 }
+
 
 // 입력폼 복원
 function restoreEditForm(m, d) {
@@ -1176,6 +1282,8 @@ window.addEventListener('DOMContentLoaded', function() {
     if (!db) {
         const tbody = document.getElementById('visitLogTbody');
         if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:20px;">Firebase 미설정 (설정 후 이용 가능)</td></tr>';
+    } else {
+        loadInitialMonthDataFallback();
     }
 
     // 월 필터 옵션 생성

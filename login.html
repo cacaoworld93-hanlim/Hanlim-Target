@@ -54,7 +54,8 @@
     color: #333;
     margin-bottom: 6px;
   }
-  input[type=email] {
+  input[type=email],
+  input[type=password] {
     width: 100%;
     padding: 12px 14px;
     border: 1px solid #ddd;
@@ -63,8 +64,13 @@
     margin-bottom: 18px;
     outline: none;
     transition: border .2s;
+    background: #fff;
+    appearance: none;
+    -webkit-appearance: none;
   }
-  input[type=email]:focus { border-color: #1a3a6b; }
+  input[type=email]:focus,
+  input[type=password]:focus { border-color: #1a3a6b; }
+  #localPwBox { display: none !important; }
   .btn {
     width: 100%;
     padding: 13px;
@@ -107,7 +113,7 @@
   <hr class="divider">
 
   <!-- 비밀번호 입력 박스 (미사용, 하위호환 유지) -->
-  <div id="localPwBox" class="form-box" style="display:none !important; background:#fffbeb; border:1px solid #f59e0b; border-radius:8px; padding:14px; margin-bottom:12px;">
+  <div id="localPwBox" class="form-box" style="display:none !important; background:#fffbeb; border:1px solid #f59e0b; border-radius:8px; padding:14px; margin-bottom:12px;;display:none !important;">
     <div style="font-size:12px; color:#92400e; margin-bottom:8px;">
       <strong>이메일/비밀번호 로그인</strong><br>
       계정: <span id="localEmailDisplay" style="font-weight:600;"></span>
@@ -128,7 +134,7 @@
     <label for="emailInput">한림 이메일 주소</label>
     <input type="email" id="emailInput" placeholder="example@hanlim.com" autocomplete="email" autofocus>
     <label for="passwordInput" style="margin-top:10px;display:block;">비밀번호</label>
-    <input type="password" id="passwordInput" placeholder="비밀번호 입력" autocomplete="current-password">
+    <input type="password" id="passwordInput" placeholder="비밀번호 입력" autocomplete="current-password" style="width:100%;">
     <button class="btn" id="sendBtn" onclick="handlePrimaryAction()">로그인</button>
     <p class="hint">@hanlim.com 이메일과 등록된 비밀번호로 로그인합니다.</p>
   </div>
