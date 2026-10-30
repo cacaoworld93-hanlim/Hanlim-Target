@@ -274,6 +274,9 @@ auth.onAuthStateChanged(user => {
 
     if (email === ADMIN_EMAIL) {
         showAdminUI();
+        if (db && typeof loadVisitLogs === 'function') {
+            loadVisitLogs();
+        }
     } else {
         hideAdminUI();
     }
@@ -498,7 +501,7 @@ async function logout() {
   </div>
     <div class="month-sel">
       <label>📅 월 선택:</label>
-      <select id="month-select" onchange="loadMonthGoals()">
+      <select id="month-select" onchange="onMonthChange()">
         <option value="1">1월</option>
         <option value="2">2월</option>
         <option value="3">3월</option>
@@ -659,7 +662,8 @@ async function logout() {
 
 
 <script>
-// ── 메인 대시보드 JS ──────────────────────────────────────────────
+// ── 메인 대시보드 JS
+// build: 2026-10-30-password-only-patched ──────────────────────────────────────────────
 const currentMonth = 10;
 const monthGoals = {"1": {"hanlim": 20802000000, "pfizer": 2500000000, "eyes": 5200000000}, "2": {"hanlim": 19902000000, "pfizer": 2000000000, "eyes": 5200000000}, "3": {"hanlim": 21300000000, "pfizer": 2360000000, "eyes": 5600000000}, "4": {"hanlim": 21800000000, "pfizer": 2450000000, "eyes": 6500000000}, "5": {"hanlim": 20590000000, "pfizer": 2250000000, "eyes": 6400000000}, "6": {"hanlim": 21970000000, "pfizer": 2400000000, "eyes": 5900000000}, "7": {"hanlim": 23760000000, "pfizer": 2650000000, "eyes": 6000000000}, "8": {"hanlim": 21260000000, "pfizer": 2090000000, "eyes": 6000000000}, "9": {"hanlim": 23268000000, "pfizer": 2300000000, "eyes": 6100000000}, "10": {"hanlim": 23648000000, "pfizer": 2550000000, "eyes": 6000000000}, "11": {"hanlim": 24110000000, "pfizer": 2100000000, "eyes": 5500000000}, "12": {"hanlim": 23550000000, "pfizer": 1850000000, "eyes": 5600000000}};
 
@@ -683,15 +687,6 @@ function fmtWon(v) {
 
 function getStoredMonthData(m) {
   if (savedData[m]) return savedData[m];
-  try {
-    // Firestore 실시간 동기화로 대체됨
-    if (stored) {
-      savedData[m] = JSON.parse(stored);
-      return savedData[m];
-    }
-  } catch (e) {
-    console.warn('월별 저장 데이터 복원 실패:', e);
-  }
   return null;
 }
 
@@ -767,23 +762,21 @@ function loadMonthGoals() {
   clearMonthEntryFields();
 
   var d = getStoredMonthData(m);
-  if (!d) return;
+  if (d) {
+    [
+      ['ed_jeyak_jeonil','d_jeyak_jeonil'],['ed_jeyak_maljil','d_jeyak_maljil'],
+      ['ed_jeyak_return','d_jeyak_return'],['ed_ms_jeonil','d_ms_jeonil'],
+      ['ed_ms_maljil','d_ms_maljil'],['ed_ms_return','d_ms_return'],
+      ['ed_eyes_jeonil','d_eyes_jeonil'],['ed_eyes_maljil','d_eyes_maljil'],
+      ['ed_eyes_return','d_eyes_return'],['eg_pt_hanrim','pt_hanrim'],
+      ['eg_pt_eyes','pt_eyes']
+    ].forEach(function(pair) {
+      var el = document.getElementById(pair[0]);
+      if (el && d[pair[1]] !== undefined && d[pair[1]] !== null && d[pair[1]] !== 0) {
+        el.value = d[pair[1]];
+      }
+    });
 
-  [
-    ['ed_jeyak_jeonil','d_jeyak_jeonil'],['ed_jeyak_maljil','d_jeyak_maljil'],
-    ['ed_jeyak_return','d_jeyak_return'],['ed_ms_jeonil','d_ms_jeonil'],
-    ['ed_ms_maljil','d_ms_maljil'],['ed_ms_return','d_ms_return'],
-    ['ed_eyes_jeonil','d_eyes_jeonil'],['ed_eyes_maljil','d_eyes_maljil'],
-    ['ed_eyes_return','d_eyes_return'],['eg_pt_hanrim','pt_hanrim'],
-    ['eg_pt_eyes','pt_eyes']
-  ].forEach(function(pair) {
-    var el = document.getElementById(pair[0]);
-    if (el && d[pair[1]] !== undefined && d[pair[1]] !== null && d[pair[1]] !== 0) {
-      el.value = d[pair[1]];
-    }
-  });
-
-  if (d.adj_hanlim_cut || d.adj_hanlim_mod === 0 || d.adj_hanlim_mod) {
     if (d.adj_hanlim_mod !== undefined && d.adj_hanlim_mod !== null && d.adj_hanlim_mod !== '') {
       document.getElementById('adj_hanlim_mod').value = d.adj_hanlim_mod;
       syncAdj('hanlim', 'mod');
@@ -791,9 +784,7 @@ function loadMonthGoals() {
       document.getElementById('adj_hanlim_cut').value = d.adj_hanlim_cut;
       syncAdj('hanlim', 'cut');
     }
-  }
 
-  if (d.adj_eyes_cut || d.adj_eyes_mod === 0 || d.adj_eyes_mod) {
     if (d.adj_eyes_mod !== undefined && d.adj_eyes_mod !== null && d.adj_eyes_mod !== '') {
       document.getElementById('adj_eyes_mod').value = d.adj_eyes_mod;
       syncAdj('eyes', 'mod');
@@ -801,9 +792,16 @@ function loadMonthGoals() {
       document.getElementById('adj_eyes_cut').value = d.adj_eyes_cut;
       syncAdj('eyes', 'cut');
     }
+
+    updateDashboard(m);
+  } else {
+    const noticeEl = document.getElementById('notice-bar') || document.querySelector('.notice');
+    if (noticeEl) {
+      noticeEl.innerHTML = '';
+      noticeEl.style.display = 'none';
+    }
   }
 }
-
 
 // 월 선택 시 목표값 로드
 // loadMonthGoals replaced above
@@ -875,16 +873,24 @@ function saveNow() {
 }
 
 // ── Firestore 실시간 구독 ─────────────────────────────────────────
+let unsubscribeDashboardState = null;
+
 function startRealtimeSync() {
-  const m = parseInt(document.getElementById('month-select') ?
-    document.getElementById('month-select').value : 10, 10);
-  db.collection('dashboardState').doc('month_' + m)
+  const monthEl = document.getElementById('month-select');
+  const m = parseInt(monthEl ? monthEl.value : currentMonth, 10);
+
+  if (typeof unsubscribeDashboardState === 'function') {
+    unsubscribeDashboardState();
+    unsubscribeDashboardState = null;
+  }
+
+  unsubscribeDashboardState = db.collection('dashboardState').doc('month_' + m)
     .onSnapshot(doc => {
       if (doc.exists) {
         const data = doc.data();
         savedData[m] = data;
+        loadMonthGoals();
         updateDashboard(m);
-        // 저장 시각 표시
         if (data.updatedAt) {
           try {
             const t = data.updatedAt.toDate();
@@ -898,10 +904,12 @@ function startRealtimeSync() {
             if (lu) lu.textContent = ts + ' (' + (data.updatedBy || '') + ')';
           } catch(e) {}
         }
-        // 입력폼 복원 (관리자만)
         if (currentUser && currentUser.email === ADMIN_EMAIL) {
           restoreEditForm(m, data);
         }
+      } else {
+        delete savedData[m];
+        loadMonthGoals();
       }
     }, err => {
       console.warn('실시간 동기화 오류:', err.message);
@@ -910,7 +918,8 @@ function startRealtimeSync() {
 
 // 월 변경 시 새 구독
 function onMonthChange() {
-  startRealtimeSync();
+  loadMonthGoals();
+  if (db) startRealtimeSync();
 }
 
 // 입력폼 복원
@@ -955,11 +964,13 @@ function updateDashboard(m) {
   const hanlimBaseGoal = mg ? ((mg.hanlim || 0) + (mg.pfizer || 0)) : ((d.goal_hanlim || 0) + (d.goal_pfizer || 0));
   const eyesBaseGoal = mg ? (mg.eyes || 0) : (d.goal_eyes || 0);
 
+  const hasHanlimMod = d.adj_hanlim_mod !== undefined && d.adj_hanlim_mod !== null && d.adj_hanlim_mod !== '';
+  const hasEyesMod = d.adj_eyes_mod !== undefined && d.adj_eyes_mod !== null && d.adj_eyes_mod !== '';
   const hanlimCut = d.adj_hanlim_cut || 0;
   const eyesCut = d.adj_eyes_cut || 0;
 
-  const hanlimGoal = hanlimCut > 0 ? (hanlimBaseGoal - hanlimCut) : hanlimBaseGoal;
-  const eyesGoal = eyesCut > 0 ? (eyesBaseGoal - eyesCut) : eyesBaseGoal;
+  const hanlimGoal = hasHanlimMod ? Number(d.adj_hanlim_mod || 0) : (hanlimCut > 0 ? (hanlimBaseGoal - hanlimCut) : hanlimBaseGoal);
+  const eyesGoal = hasEyesMod ? Number(d.adj_eyes_mod || 0) : (eyesCut > 0 ? (eyesBaseGoal - eyesCut) : eyesBaseGoal);
 
   const noticeEl = document.getElementById('notice-bar') || document.querySelector('.notice');
   if (noticeEl) {
@@ -1122,26 +1133,7 @@ function closePasswordModal() {
 }
 
 function changePassword() {
-    const oldPw = document.getElementById('oldPassword').value;
-    const newPw = document.getElementById('newPassword').value;
-    const confirmPw = document.getElementById('confirmPassword').value;
-    // Firebase Auth 방식으로 비밀번호 변경 불필요
-
-    if (oldPw !== savedPassword) {
-        alert('❌ 현재 비밀번호가 틀렸습니다');
-        return;
-    }
-    if (!newPw || newPw.length < 4) {
-        alert('❌ 새 비밀번호는 4자 이상이어야 합니다');
-        return;
-    }
-    if (newPw !== confirmPw) {
-        alert('❌ 비밀번호 확인이 일치하지 않습니다');
-        return;
-    }
-
-    // Firebase Auth 방식
-    alert('✅ 비밀번호가 변경되었습니다');
+    alert('비밀번호 변경은 Firebase Authentication 사용자 비밀번호 변경 또는 재설정 메일 방식으로 처리해야 합니다. 현재 이 버튼은 안내용입니다.');
     closePasswordModal();
 }
 
@@ -1176,50 +1168,12 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 마지막 저장 시간 복원
-  // Firestore에서 복원됨
-    if (lastSaveTime) {
-        document.getElementById('last-update').textContent = lastSaveTime;
-    }
-
     // 월 선택을 현재 월로 설정
     document.getElementById('month-select').value = currentMonth;
     loadMonthGoals();
 
-  // Firestore에서 복원됨
-  // Firestore onSnapshot에서 복원됨
-    if (stored) {
-        savedData[currentMonth] = JSON.parse(stored);
-        const d = savedData[currentMonth];
-        if (d) {
-            const fields = [
-                ['ed_jeyak_jeonil','d_jeyak_jeonil'],['ed_jeyak_maljil','d_jeyak_maljil'],
-                ['ed_jeyak_return','d_jeyak_return'],['ed_ms_jeonil','d_ms_jeonil'],
-                ['ed_ms_maljil','d_ms_maljil'],['ed_ms_return','d_ms_return'],
-                ['ed_eyes_jeonil','d_eyes_jeonil'],['ed_eyes_maljil','d_eyes_maljil'],
-                ['ed_eyes_return','d_eyes_return'],['eg_pt_hanrim','pt_hanrim'],
-                ['eg_pt_eyes','pt_eyes']
-            ];
-            fields.forEach(([elId, key]) => {
-                const el = document.getElementById(elId);
-                if (el && d[key]) el.value = d[key];
-            });
-            if (d.adj_hanlim_cut || d.adj_hanlim_mod) {
-                if (d.adj_hanlim_mod) { document.getElementById('adj_hanlim_mod').value = d.adj_hanlim_mod; syncAdj('hanlim','mod'); }
-                else { document.getElementById('adj_hanlim_cut').value = d.adj_hanlim_cut; syncAdj('hanlim','cut'); }
-            }
-            if (d.adj_eyes_cut || d.adj_eyes_mod) {
-                if (d.adj_eyes_mod) { document.getElementById('adj_eyes_mod').value = d.adj_eyes_mod; syncAdj('eyes','mod'); }
-                else { document.getElementById('adj_eyes_cut').value = d.adj_eyes_cut; syncAdj('eyes','cut'); }
-            }
-            updateDashboard(currentMonth);
-        }
-    }
-
-    // 방문 로그 로드
-    if (db) {
-        loadVisitLogs();
-    } else {
+    // 방문 로그는 관리자 인증 이후에만 로드
+    if (!db) {
         const tbody = document.getElementById('visitLogTbody');
         if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:20px;">Firebase 미설정 (설정 후 이용 가능)</td></tr>';
     }
@@ -1362,7 +1316,7 @@ function updateStats() {
 
 // ── 콤마 입력 포매팅 ─────────────────────────────────────────────
 function fmtCommaInput(el) {
-  var raw = el.value.replace(/,/g, '').replace(/[^0-9\-]/g, '');
+  var raw = el.value.replace(/,/g, '').replace(/[^0-9-]/g, '');
   if (raw === '' || raw === '-') { el.value = raw; return; }
   var num = parseInt(raw, 10);
   if (!isNaN(num)) {
@@ -1397,38 +1351,67 @@ function updateEditTotal(type) {
 function handleCSVUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const text = e.target.result;
-        const lines = text.split('\n').filter(l => l.trim());
+
+    const statusEl = document.getElementById('csvStatus');
+
+    const parseCSVLine = (line) => {
+        const result = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') {
+                if (inQuotes && line[i + 1] === '"') {
+                    cur += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (ch === ',' && !inQuotes) {
+                result.push(cur.trim());
+                cur = '';
+            } else {
+                cur += ch;
+            }
+        }
+        result.push(cur.trim());
+        return result.map(v => v.replace(/^"|"$/g, ''));
+    };
+
+    const processText = (text) => {
+        const normalized = text.replace(/^﻿/, '');
+        const lines = normalized.split(/\r?\n/).filter(l => l.trim());
+?
+/).filter(l => l.trim());
         if (lines.length < 2) {
-            document.getElementById('csvStatus').textContent = '❌ 데이터가 없습니다';
+            statusEl.textContent = '❌ 데이터가 없습니다';
             return;
         }
-        // 헤더 파싱
-        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g,'').toLowerCase());
-        // 영문/한국어(아웃룩) 컬럼 자동 매핑
-        const nameIdx     = headers.indexOf('name')     >= 0 ? headers.indexOf('name')     : headers.indexOf('이름');
-        const emailIdx    = headers.indexOf('email')    >= 0 ? headers.indexOf('email')    : headers.indexOf('e-메일주소');
-        const deptIdx     = headers.indexOf('dept')     >= 0 ? headers.indexOf('dept')     : headers.indexOf('부서');
+
+        const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+        const nameIdx = headers.indexOf('name') >= 0 ? headers.indexOf('name') : headers.indexOf('이름');
+        const emailIdx = headers.indexOf('email') >= 0 ? headers.indexOf('email') : headers.indexOf('e-메일주소');
+        const deptIdx = headers.indexOf('dept') >= 0 ? headers.indexOf('dept') : headers.indexOf('부서');
         const positionIdx = headers.indexOf('position') >= 0 ? headers.indexOf('position') : headers.indexOf('직위');
+
         if (nameIdx < 0 || emailIdx < 0) {
-            document.getElementById('csvStatus').textContent = '❌ CSV에 name, email 컬럼이 필요합니다';
+            statusEl.textContent = '❌ CSV에 name/email 또는 이름/e-메일주소 컬럼이 필요합니다';
             return;
         }
+
         const employees = [];
         for (let i = 1; i < lines.length; i++) {
-            const cols = lines[i].split(',').map(c => c.trim().replace(/"/g,''));
-            if (!cols[emailIdx]) continue;
+            const cols = parseCSVLine(lines[i]);
+            const email = (cols[emailIdx] || '').trim().toLowerCase();
+            if (!email) continue;
             employees.push({
-                name:     cols[nameIdx]     || '',
-                email:    cols[emailIdx].toLowerCase(),
-                dept:     deptIdx >= 0     ? (cols[deptIdx]     || '') : '',
-                position: positionIdx >= 0 ? (cols[positionIdx] || '') : ''
+                name: (cols[nameIdx] || '').trim(),
+                email: email,
+                dept: deptIdx >= 0 ? ((cols[deptIdx] || '').trim()) : '',
+                position: positionIdx >= 0 ? ((cols[positionIdx] || '').trim()) : ''
             });
         }
-        // Firestore에 영구 저장
-        const statusEl = document.getElementById('csvStatus');
+
         statusEl.textContent = '저장 중...';
         db.collection('config').doc('employees').set({
             list: employees,
@@ -1436,13 +1419,35 @@ function handleCSVUpload(event) {
             updatedBy: currentUser ? currentUser.email : ''
         }).then(() => {
             statusEl.textContent = '✅ ' + employees.length + '명 Firestore에 저장 완료';
-            localStorage.setItem('hanlim_employees', JSON.stringify(employees)); // 로컬 캐시
+            localStorage.setItem('hanlim_employees', JSON.stringify(employees));
         }).catch(err => {
             statusEl.textContent = '❌ 저장 실패: ' + err.message;
         });
-        event.target.value = '';
     };
-    reader.readAsText(file, 'UTF-8');
+
+    const readAsEncoding = (encoding) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result || '';
+            if (encoding === 'UTF-8' && /�/.test(text)) {
+                readAsEncoding('CP949');
+                return;
+            }
+            processText(text);
+            event.target.value = '';
+        };
+        try {
+            reader.readAsText(file, encoding);
+        } catch (err) {
+            if (encoding !== 'CP949') {
+                readAsEncoding('CP949');
+            } else {
+                statusEl.textContent = '❌ CSV 읽기 실패: ' + err.message;
+            }
+        }
+    };
+
+    readAsEncoding('UTF-8');
 }
 </script>
 </body>
