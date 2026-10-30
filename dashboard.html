@@ -174,8 +174,10 @@ auth.onAuthStateChanged(user => {
 
     // 관리자 UI 표시
     if (user.email === ADMIN_EMAIL) {
-        const editTab = document.getElementById('tab-edit');
+        const editTab = document.getElementById('tabEdit');
         if (editTab) editTab.style.display = 'inline-block';
+        const logsTab = document.getElementById('tabLogs');
+        if (logsTab) logsTab.style.display = 'inline-block';
         const csvSec = document.getElementById('csvUploadSec');
         if (csvSec) csvSec.style.display = 'block';
     }
