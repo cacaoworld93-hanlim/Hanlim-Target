@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>판매 마감 현황 2026</title>
-<!-- build: 2026-10-30-final-1 -->
+<!-- build: 2026-10-30-final-3 -->
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -139,13 +139,35 @@ body{font-family:var(--font);background:#f1f5f9;color:var(--fg);font-size:14px;m
 .pgbar{height:18px;background:#e5e7eb;border-radius:9px;overflow:hidden;margin-top:6px;position:relative}
 .pgfill{height:100%;background:linear-gradient(90deg, var(--pri), #60a5fa);transition:width 0.3s;display:flex;align-items:center;justify-content:flex-end;padding-right:6px}
 .pgtxt{font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3)}
+
+/* 차감목표, 수정목표, 전일총계 입력 스피너 제거 */
+#adj_hanlim_cut::-webkit-inner-spin-button,
+#adj_hanlim_cut::-webkit-outer-spin-button,
+#adj_hanlim_mod::-webkit-inner-spin-button,
+#adj_hanlim_mod::-webkit-outer-spin-button,
+#adj_eyes_cut::-webkit-inner-spin-button,
+#adj_eyes_cut::-webkit-outer-spin-button,
+#adj_eyes_mod::-webkit-inner-spin-button,
+#adj_eyes_mod::-webkit-outer-spin-button,
+#eg_pt_hanrim::-webkit-inner-spin-button,
+#eg_pt_hanrim::-webkit-outer-spin-button,
+#eg_pt_eyes::-webkit-inner-spin-button,
+#eg_pt_eyes::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+#adj_hanlim_cut, #adj_hanlim_mod,
+#adj_eyes_cut, #adj_eyes_mod,
+#eg_pt_hanrim, #eg_pt_eyes {
+    -moz-appearance: textfield;
+}
 </style>
 
 <script>
 // ================================================================
 // Firebase 설정
 // ================================================================
-const BUILD_VERSION = '2026-10-30-final-1';
+const BUILD_VERSION = '2026-10-30-final-3';
 const FIREBASE_CONFIG = {
     apiKey:            "AIzaSyC1l8qJ-bDh4pGELdmW8B5xiCCoVQNBrWE",
     authDomain:        "hanlim-target-dfd63.firebaseapp.com",
@@ -370,59 +392,27 @@ async function logout() {
         </div>
       </div>
     </div>
-
-    <div class="sec">
-      <div class="sttl">사업부별 전체 현황</div>
-      <div class="dept-g">
-        <div class="dept-c">
-          <div class="dept-c-t">한림 (제약+MS+화이자)</div>
-          <div class="dept-r">
-            <span class="dept-lab">목표</span>
-            <span class="dept-val" id="ds_dept_hanrim_goal">26,198,000 <span style="font-size:12px;color:#9ca3af">≈261.98억</span></span>
+      <div style="background:#f9fafb;border-radius:8px;padding:16px 20px;border:1px solid #d1d5db;margin-top:14px;">
+        <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:14px;text-align:center;">한림(제약+MS+화이자) + 눈건강 합계</div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-end;justify-content:center;">
+          <div style="text-align:center;">
+            <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">합계 목표</div>
+            <div style="font-size:15px;font-weight:700;color:#111827;" id="ds_total_goal">-</div>
           </div>
-          <div class="dept-r">
-            <span class="dept-lab">실적</span>
-            <span class="dept-val" id="ds_dept_hanrim_actual">18,050,000 <span style="font-size:12px;color:#9ca3af">≈180.50억</span></span>
+          <div style="text-align:center;">
+            <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">합계 실적</div>
+            <div style="font-size:15px;font-weight:700;color:#111827;" id="ds_total_actual">-</div>
           </div>
-          <div class="dept-r">
-            <span class="dept-lab">달성</span>
-            <span class="dept-val" id="ds_dept_hanrim_pct">72%</span>
+          <div style="text-align:center;">
+            <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">남은금액</div>
+            <div style="font-size:15px;font-weight:700;" id="ds_total_remain">-</div>
           </div>
-        </div>
-
-        <div class="dept-c">
-          <div class="dept-c-t">눈건강</div>
-          <div class="dept-r">
-            <span class="dept-lab">목표</span>
-            <span class="dept-val" id="ds_dept_eyes_goal">6,000,000 <span style="font-size:12px;color:#9ca3af">≈60.00억</span></span>
-          </div>
-          <div class="dept-r">
-            <span class="dept-lab">실적</span>
-            <span class="dept-val" id="ds_dept_eyes_actual">9,520,000 <span style="font-size:12px;color:#9ca3af">≈95.20억</span></span>
-          </div>
-          <div class="dept-r">
-            <span class="dept-lab">달성</span>
-            <span class="dept-val" id="ds_dept_eyes_pct">95%</span>
-          </div>
-        </div>
-
-        <div class="dept-c">
-          <div class="dept-c-t">전체</div>
-          <div class="dept-r">
-            <span class="dept-lab">목표</span>
-            <span class="dept-val" id="ds_dept_total_goal">32,198,000 <span style="font-size:12px;color:#9ca3af">≈321.98억</span></span>
-          </div>
-          <div class="dept-r">
-            <span class="dept-lab">실적</span>
-            <span class="dept-val" id="ds_dept_total_actual">27,570,000 <span style="font-size:12px;color:#9ca3af">≈275.70억</span></span>
-          </div>
-          <div class="dept-r">
-            <span class="dept-lab">달성</span>
-            <span class="dept-val" id="ds_dept_total_pct">78%</span>
+          <div style="text-align:center;">
+            <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">달성율</div>
+            <div style="font-size:24px;font-weight:800;color:#2563eb;" id="ds_total_pct">-</div>
           </div>
         </div>
       </div>
-    </div>
 
     <div class="sec">
       <div class="sttl">말일 결재</div>
@@ -432,56 +422,68 @@ async function logout() {
           <div class="dept-r"><span class="dept-lab">전일</span><span class="dept-val" id="ds_jeyak_jeonil">0</span></div>
           <div class="dept-r"><span class="dept-lab">말일</span><span class="dept-val" id="ds_jeyak_maljil">0</span></div>
           <div class="dept-r"><span class="dept-lab">반품/부결</span><span class="dept-val" id="ds_jeyak_return">0</span></div>
+          <div class="dept-r" style="margin-top:8px;border-top:1px solid #e5e7eb;padding-top:8px;"><span class="dept-lab" style="color:#111827;font-weight:700;">총계</span><span class="dept-val" style="color:#2563eb;font-weight:800;" id="ds_jeyak_total">0</span></div>
         </div>
         <div class="dept-c">
           <div class="dept-c-t">MS (화이자 포함)</div>
           <div class="dept-r"><span class="dept-lab">전일</span><span class="dept-val" id="ds_ms_jeonil">0</span></div>
           <div class="dept-r"><span class="dept-lab">말일</span><span class="dept-val" id="ds_ms_maljil">0</span></div>
           <div class="dept-r"><span class="dept-lab">반품/부결</span><span class="dept-val" id="ds_ms_return">0</span></div>
+          <div class="dept-r" style="margin-top:8px;border-top:1px solid #e5e7eb;padding-top:8px;"><span class="dept-lab" style="color:#111827;font-weight:700;">총계</span><span class="dept-val" style="color:#2563eb;font-weight:800;" id="ds_ms_total">0</span></div>
         </div>
         <div class="dept-c">
           <div class="dept-c-t">눈건강</div>
           <div class="dept-r"><span class="dept-lab">전일</span><span class="dept-val" id="ds_eyes_jeonil_d">0</span></div>
           <div class="dept-r"><span class="dept-lab">말일</span><span class="dept-val" id="ds_eyes_maljil_d">0</span></div>
           <div class="dept-r"><span class="dept-lab">반품/부결</span><span class="dept-val" id="ds_eyes_return_d">0</span></div>
+          <div class="dept-r" style="margin-top:8px;border-top:1px solid #e5e7eb;padding-top:8px;"><span class="dept-lab" style="color:#111827;font-weight:700;">총계</span><span class="dept-val" style="color:#2563eb;font-weight:800;" id="ds_eyes_total_d">0</span></div>
         </div>
       </div>
     </div>
 
     <div class="sec">
       <div class="sttl">목표 대비 달성률</div>
-      <div style="margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="font-weight:600;font-size:16px">전체</span>
-          <span style="font-weight:700;color:var(--pri);font-size:18px" id="ds_bar_total">78%</span>
+      <div style="display:flex;gap:40px;justify-content:center;flex-wrap:wrap;padding:16px 0;">
+
+        <div style="text-align:center;">
+          <svg width="180" height="180" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="70" fill="none" stroke="#e5e7eb" stroke-width="24"/>
+            <circle id="donut_hanlim_arc" cx="100" cy="100" r="70" fill="none"
+              stroke="#2563eb" stroke-width="24" stroke-dasharray="0 439.82"
+              stroke-linecap="round" transform="rotate(-90 100 100)"/>
+            <text x="100" y="94" text-anchor="middle" font-size="30" font-weight="800" fill="#111827" id="donut_hanlim_pct">0%</text>
+            <text x="100" y="118" text-anchor="middle" font-size="13" fill="#6b7280">달성</text>
+          </svg>
+          <div style="font-size:14px;font-weight:700;color:#111827;margin-top:6px;">한림 (제약+MS+화이자)</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:3px;">목표 <span id="donut_hanlim_goal_text" style="color:#111827;font-weight:600;">-</span>억 / 실적 <span id="donut_hanlim_actual_text" style="color:#2563eb;font-weight:600;">-</span>억</div>
         </div>
-        <div class="pgbar">
-          <div class="pgfill" id="ds_bar_total_fill" style="width:78%">
-            <span class="pgtxt">78%</span>
-          </div>
+
+        <div style="text-align:center;">
+          <svg width="180" height="180" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="70" fill="none" stroke="#e5e7eb" stroke-width="24"/>
+            <circle id="donut_eyes_arc" cx="100" cy="100" r="70" fill="none"
+              stroke="#059669" stroke-width="24" stroke-dasharray="0 439.82"
+              stroke-linecap="round" transform="rotate(-90 100 100)"/>
+            <text x="100" y="94" text-anchor="middle" font-size="30" font-weight="800" fill="#111827" id="donut_eyes_pct">0%</text>
+            <text x="100" y="118" text-anchor="middle" font-size="13" fill="#6b7280">달성</text>
+          </svg>
+          <div style="font-size:14px;font-weight:700;color:#111827;margin-top:6px;">눈건강</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:3px;">목표 <span id="donut_eyes_goal_text" style="color:#111827;font-weight:600;">-</span>억 / 실적 <span id="donut_eyes_actual_text" style="color:#059669;font-weight:600;">-</span>억</div>
         </div>
-      </div>
-      <div style="margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="font-weight:600;font-size:16px">한림</span>
-          <span style="font-weight:700;color:var(--pri);font-size:18px" id="ds_bar_hanrim">72%</span>
+
+        <div style="text-align:center;">
+          <svg width="180" height="180" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="70" fill="none" stroke="#e5e7eb" stroke-width="24"/>
+            <circle id="donut_total_arc" cx="100" cy="100" r="70" fill="none"
+              stroke="#7c3aed" stroke-width="24" stroke-dasharray="0 439.82"
+              stroke-linecap="round" transform="rotate(-90 100 100)"/>
+            <text x="100" y="94" text-anchor="middle" font-size="30" font-weight="800" fill="#111827" id="donut_total_pct">0%</text>
+            <text x="100" y="118" text-anchor="middle" font-size="13" fill="#6b7280">달성</text>
+          </svg>
+          <div style="font-size:14px;font-weight:700;color:#111827;margin-top:6px;">한림 + 눈건강 합계</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:3px;">목표 <span id="donut_total_goal_text" style="color:#111827;font-weight:600;">-</span>억 / 실적 <span id="donut_total_actual_text" style="color:#7c3aed;font-weight:600;">-</span>억</div>
         </div>
-        <div class="pgbar">
-          <div class="pgfill" id="ds_bar_hanrim_fill" style="width:72%">
-            <span class="pgtxt">72%</span>
-          </div>
-        </div>
-      </div>
-      <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="font-weight:600;font-size:16px">눈건강</span>
-          <span style="font-weight:700;color:var(--pri);font-size:18px" id="ds_bar_eyes">95%</span>
-        </div>
-        <div class="pgbar">
-          <div class="pgfill" id="ds_bar_eyes_fill" style="width:95%">
-            <span class="pgtxt">95%</span>
-          </div>
-        </div>
+
       </div>
     </div>
   </div>
@@ -517,21 +519,24 @@ async function logout() {
       <div class="dg">
         <div class="dc">
           <div class="dc-t">제약</div>
-          <div class="dr"><label>전일</label><input type="number" id="ed_jeyak_jeonil" placeholder="0"></div>
-          <div class="dr"><label>말일</label><input type="number" id="ed_jeyak_maljil" placeholder="0"></div>
-          <div class="dr"><label>반품/부결</label><input type="number" id="ed_jeyak_return" placeholder="0"></div>
+          <div class="dr"><label>전일</label><input type="text" id="ed_jeyak_jeonil" placeholder="" oninput="fmtCommaInput(this);updateEditTotal('jeyak')" inputmode="numeric"></div>
+          <div class="dr"><label>말일</label><input type="text" id="ed_jeyak_maljil" placeholder="" oninput="fmtCommaInput(this);updateEditTotal('jeyak')" inputmode="numeric"></div>
+          <div class="dr"><label>반품/부결</label><input type="text" id="ed_jeyak_return" placeholder="" oninput="fmtCommaInput(this);updateEditTotal('jeyak')" inputmode="numeric"></div>
+          <div class="dr" style="margin-top:8px;border-top:1px solid #e5e7eb;padding-top:8px;"><label style="font-weight:700;color:#111827;">총계</label><span id="ed_jeyak_total" style="font-size:15px;font-weight:800;color:#2563eb;">-</span></div>
         </div>
         <div class="dc">
           <div class="dc-t">MS (화이자 포함)</div>
-          <div class="dr"><label>전일</label><input type="number" id="ed_ms_jeonil" placeholder="0"></div>
-          <div class="dr"><label>말일</label><input type="number" id="ed_ms_maljil" placeholder="0"></div>
-          <div class="dr"><label>반품/부결</label><input type="number" id="ed_ms_return" placeholder="0"></div>
+          <div class="dr"><label>전일</label><input type="text" id="ed_ms_jeonil" placeholder="" oninput="fmtCommaInput(this);updateEditTotal('ms')" inputmode="numeric"></div>
+          <div class="dr"><label>말일</label><input type="text" id="ed_ms_maljil" placeholder="" oninput="fmtCommaInput(this);updateEditTotal('ms')" inputmode="numeric"></div>
+          <div class="dr"><label>반품/부결</label><input type="text" id="ed_ms_return" placeholder="" oninput="fmtCommaInput(this);updateEditTotal('ms')" inputmode="numeric"></div>
+          <div class="dr" style="margin-top:8px;border-top:1px solid #e5e7eb;padding-top:8px;"><label style="font-weight:700;color:#111827;">총계</label><span id="ed_ms_total" style="font-size:15px;font-weight:800;color:#2563eb;">-</span></div>
         </div>
         <div class="dc">
           <div class="dc-t">눈건강</div>
-          <div class="dr"><label>전일</label><input type="number" id="ed_eyes_jeonil" placeholder="0"></div>
-          <div class="dr"><label>말일</label><input type="number" id="ed_eyes_maljil" placeholder="0"></div>
-          <div class="dr"><label>반품/부결</label><input type="number" id="ed_eyes_return" placeholder="0"></div>
+          <div class="dr"><label>전일</label><input type="text" id="ed_eyes_jeonil" placeholder="" oninput="fmtCommaInput(this);updateEditTotal('eyes')" inputmode="numeric"></div>
+          <div class="dr"><label>말일</label><input type="text" id="ed_eyes_maljil" placeholder="" oninput="fmtCommaInput(this);updateEditTotal('eyes')" inputmode="numeric"></div>
+          <div class="dr"><label>반품/부결</label><input type="text" id="ed_eyes_return" placeholder="" oninput="fmtCommaInput(this);updateEditTotal('eyes')" inputmode="numeric"></div>
+          <div class="dr" style="margin-top:8px;border-top:1px solid #e5e7eb;padding-top:8px;"><label style="font-weight:700;color:#111827;">총계</label><span id="ed_eyes_total" style="font-size:15px;font-weight:800;color:#2563eb;">-</span></div>
         </div>
       </div>
     </div>
@@ -821,17 +826,17 @@ function saveNow() {
   const m = parseInt(document.getElementById('month-select').value, 10);
   const data = {
     month: m,
-    d_jeyak_jeonil: parseInt(document.getElementById('ed_jeyak_jeonil').value, 10) || 0,
-    d_jeyak_maljil: parseInt(document.getElementById('ed_jeyak_maljil').value, 10) || 0,
-    d_jeyak_return: parseInt(document.getElementById('ed_jeyak_return').value, 10) || 0,
-    d_ms_jeonil: parseInt(document.getElementById('ed_ms_jeonil').value, 10) || 0,
-    d_ms_maljil: parseInt(document.getElementById('ed_ms_maljil').value, 10) || 0,
-    d_ms_return: parseInt(document.getElementById('ed_ms_return').value, 10) || 0,
-    d_eyes_jeonil: parseInt(document.getElementById('ed_eyes_jeonil').value, 10) || 0,
-    d_eyes_maljil: parseInt(document.getElementById('ed_eyes_maljil').value, 10) || 0,
-    d_eyes_return: parseInt(document.getElementById('ed_eyes_return').value, 10) || 0,
-    pt_hanrim: parseInt(document.getElementById('eg_pt_hanrim').value, 10) || 0,
-    pt_eyes: parseInt(document.getElementById('eg_pt_eyes').value, 10) || 0,
+    d_jeyak_jeonil: getInputVal('ed_jeyak_jeonil'),
+    d_jeyak_maljil: getInputVal('ed_jeyak_maljil'),
+    d_jeyak_return: getInputVal('ed_jeyak_return'),
+    d_ms_jeonil: getInputVal('ed_ms_jeonil'),
+    d_ms_maljil: getInputVal('ed_ms_maljil'),
+    d_ms_return: getInputVal('ed_ms_return'),
+    d_eyes_jeonil: getInputVal('ed_eyes_jeonil'),
+    d_eyes_maljil: getInputVal('ed_eyes_maljil'),
+    d_eyes_return: getInputVal('ed_eyes_return'),
+    pt_hanrim: getInputVal('eg_pt_hanrim'),
+    pt_eyes: getInputVal('eg_pt_eyes'),
     goal_hanlim: parseInt(document.getElementById('goal_hanlim').value, 10) || 0,
     goal_pfizer: parseInt(document.getElementById('goal_pfizer').value, 10) || 0,
     goal_eyes: parseInt(document.getElementById('goal_eyes').value, 10) || 0,
@@ -930,7 +935,14 @@ function restoreEditForm(m, d) {
   fields.forEach(id => {
     const el = document.getElementById(id);
     const key = keyMap[id] || id;
-    if (el && d[key] !== undefined) el.value = d[key] || 0;
+    if (el && d[key] !== undefined) {
+      const v = (d[key] !== undefined && d[key] !== null && d[key] !== 0) ? d[key] : '';
+      if (el.type === 'text' && v !== '') {
+        el.value = Number(v).toLocaleString('ko-KR');
+      } else {
+        el.value = v;
+      }
+    }
   });
 }
 
@@ -1014,25 +1026,58 @@ function updateDashboard(m) {
   const totalActual = hanlimActual + eyesActual;
   const totalPct = totalGoal > 0 ? Math.round((totalActual / totalGoal) * 100) : 0;
 
-  document.getElementById('ds_dept_hanrim_goal').innerHTML = fmtWon(hanlimGoal);
-  document.getElementById('ds_dept_hanrim_actual').innerHTML = fmtWon(hanlimActual);
-  document.getElementById('ds_dept_hanrim_pct').textContent = hanlimPct + '%';
-  document.getElementById('ds_dept_eyes_goal').innerHTML = fmtWon(eyesGoal);
-  document.getElementById('ds_dept_eyes_actual').innerHTML = fmtWon(eyesActual);
-  document.getElementById('ds_dept_eyes_pct').textContent = eyesPct + '%';
-  document.getElementById('ds_dept_total_goal').innerHTML = fmtWon(totalGoal);
-  document.getElementById('ds_dept_total_actual').innerHTML = fmtWon(totalActual);
-  document.getElementById('ds_dept_total_pct').textContent = totalPct + '%';
+  // 합계 총괄
+  const _tg = document.getElementById('ds_total_goal');
+  if (_tg) _tg.innerHTML = fmtWon(totalGoal);
+  const _ta = document.getElementById('ds_total_actual');
+  if (_ta) _ta.innerHTML = fmtWon(totalActual);
+  const _tp = document.getElementById('ds_total_pct');
+  if (_tp) _tp.textContent = totalPct + '%';
 
-  document.getElementById('ds_bar_total').textContent = totalPct + '%';
-  document.getElementById('ds_bar_total_fill').style.width = totalPct + '%';
-  document.getElementById('ds_bar_total_fill').querySelector('.pgtxt').textContent = totalPct + '%';
-  document.getElementById('ds_bar_hanrim').textContent = hanlimPct + '%';
-  document.getElementById('ds_bar_hanrim_fill').style.width = hanlimPct + '%';
-  document.getElementById('ds_bar_hanrim_fill').querySelector('.pgtxt').textContent = hanlimPct + '%';
-  document.getElementById('ds_bar_eyes').textContent = eyesPct + '%';
-  document.getElementById('ds_bar_eyes_fill').style.width = eyesPct + '%';
-  document.getElementById('ds_bar_eyes_fill').querySelector('.pgtxt').textContent = eyesPct + '%';
+  // 도넛 차트 업데이트
+  const _C = 2 * Math.PI * 70;
+  const _dha = document.getElementById('donut_hanlim_arc');
+  if (_dha) _dha.setAttribute('stroke-dasharray', (Math.min(hanlimPct/100,1)*_C).toFixed(2)+' '+_C.toFixed(2));
+  const _dhp = document.getElementById('donut_hanlim_pct');
+  if (_dhp) _dhp.textContent = hanlimPct + '%';
+  const _dhg = document.getElementById('donut_hanlim_goal_text');
+  if (_dhg) _dhg.textContent = (hanlimGoal/100000000).toFixed(1);
+  const _dha2 = document.getElementById('donut_hanlim_actual_text');
+  if (_dha2) _dha2.textContent = (hanlimActual/100000000).toFixed(1);
+  const _dea = document.getElementById('donut_eyes_arc');
+  if (_dea) _dea.setAttribute('stroke-dasharray', (Math.min(eyesPct/100,1)*_C).toFixed(2)+' '+_C.toFixed(2));
+  const _dep = document.getElementById('donut_eyes_pct');
+  if (_dep) _dep.textContent = eyesPct + '%';
+  const _deg = document.getElementById('donut_eyes_goal_text');
+  if (_deg) _deg.textContent = (eyesGoal/100000000).toFixed(1);
+  const _dea2 = document.getElementById('donut_eyes_actual_text');
+  if (_dea2) _dea2.textContent = (eyesActual/100000000).toFixed(1);
+
+  // 합계 도넛
+  const _dta = document.getElementById('donut_total_arc');
+  if (_dta) _dta.setAttribute('stroke-dasharray', (Math.min(totalPct/100,1)*_C).toFixed(2)+' '+_C.toFixed(2));
+  const _dtp = document.getElementById('donut_total_pct');
+  if (_dtp) _dtp.textContent = totalPct + '%';
+  const _dtg = document.getElementById('donut_total_goal_text');
+  if (_dtg) _dtg.textContent = (totalGoal/100000000).toFixed(1);
+  const _dta2 = document.getElementById('donut_total_actual_text');
+  if (_dta2) _dta2.textContent = (totalActual/100000000).toFixed(1);
+
+  // 합계 남은금액
+  const totalRemain = totalGoal - totalActual;
+  const _tr = document.getElementById('ds_total_remain');
+  if (_tr) {
+    _tr.innerHTML = fmtWon(Math.abs(totalRemain));
+    _tr.style.color = totalRemain > 0 ? '#dc2626' : (totalRemain < 0 ? '#16a34a' : '#111827');
+  }
+
+  // 말일결재 총계 (대시보드)
+  const jeyakTotal = (d.d_jeyak_jeonil||0)+(d.d_jeyak_maljil||0)-(d.d_jeyak_return||0);
+  const msTotal    = (d.d_ms_jeonil||0)+(d.d_ms_maljil||0)-(d.d_ms_return||0);
+  const eyesTotalD = (d.d_eyes_jeonil||0)+(d.d_eyes_maljil||0)-(d.d_eyes_return||0);
+  const _jt = document.getElementById('ds_jeyak_total'); if (_jt) _jt.innerHTML = fmtWon(jeyakTotal);
+  const _mt = document.getElementById('ds_ms_total');    if (_mt) _mt.innerHTML = fmtWon(msTotal);
+  const _et = document.getElementById('ds_eyes_total_d');if (_et) _et.innerHTML = fmtWon(eyesTotalD);
 
   document.getElementById('ds_jeyak_jeonil').innerHTML = fmtWon(d.d_jeyak_jeonil || 0);
   document.getElementById('ds_jeyak_maljil').innerHTML = fmtWon(d.d_jeyak_maljil || 0);
@@ -1315,6 +1360,39 @@ function updateStats() {
     if (el3) el3.textContent = todayLogs.length;
 }
 
+// ── 콤마 입력 포매팅 ─────────────────────────────────────────────
+function fmtCommaInput(el) {
+  var raw = el.value.replace(/,/g, '').replace(/[^0-9\-]/g, '');
+  if (raw === '' || raw === '-') { el.value = raw; return; }
+  var num = parseInt(raw, 10);
+  if (!isNaN(num)) {
+    el.value = num.toLocaleString('ko-KR');
+  }
+}
+
+function getInputVal(id) {
+  var el = document.getElementById(id);
+  if (!el) return 0;
+  var v = parseInt((el.value||'').replace(/,/g,''), 10);
+  return isNaN(v) ? 0 : v;
+}
+
+function updateEditTotal(type) {
+  if (type === 'jeyak') {
+    var t = getInputVal('ed_jeyak_jeonil') + getInputVal('ed_jeyak_maljil') - getInputVal('ed_jeyak_return');
+    var el = document.getElementById('ed_jeyak_total');
+    if (el) { el.innerHTML = fmtWon(t); el.style.color = t < 0 ? '#dc2626' : '#2563eb'; }
+  } else if (type === 'ms') {
+    var t = getInputVal('ed_ms_jeonil') + getInputVal('ed_ms_maljil') - getInputVal('ed_ms_return');
+    var el = document.getElementById('ed_ms_total');
+    if (el) { el.innerHTML = fmtWon(t); el.style.color = t < 0 ? '#dc2626' : '#2563eb'; }
+  } else if (type === 'eyes') {
+    var t = getInputVal('ed_eyes_jeonil') + getInputVal('ed_eyes_maljil') - getInputVal('ed_eyes_return');
+    var el = document.getElementById('ed_eyes_total');
+    if (el) { el.innerHTML = fmtWon(t); el.style.color = t < 0 ? '#dc2626' : '#2563eb'; }
+  }
+}
+
 // ── CSV 직원 업로드 ───────────────────────────────────────────────
 function handleCSVUpload(event) {
     const file = event.target.files[0];
@@ -1329,10 +1407,11 @@ function handleCSVUpload(event) {
         }
         // 헤더 파싱
         const headers = lines[0].split(',').map(h => h.trim().replace(/"/g,'').toLowerCase());
-        const nameIdx     = headers.indexOf('name');
-        const emailIdx    = headers.indexOf('email');
-        const deptIdx     = headers.indexOf('dept');
-        const positionIdx = headers.indexOf('position');
+        // 영문/한국어(아웃룩) 컬럼 자동 매핑
+        const nameIdx     = headers.indexOf('name')     >= 0 ? headers.indexOf('name')     : headers.indexOf('이름');
+        const emailIdx    = headers.indexOf('email')    >= 0 ? headers.indexOf('email')    : headers.indexOf('e-메일주소');
+        const deptIdx     = headers.indexOf('dept')     >= 0 ? headers.indexOf('dept')     : headers.indexOf('부서');
+        const positionIdx = headers.indexOf('position') >= 0 ? headers.indexOf('position') : headers.indexOf('직위');
         if (nameIdx < 0 || emailIdx < 0) {
             document.getElementById('csvStatus').textContent = '❌ CSV에 name, email 컬럼이 필요합니다';
             return;
@@ -1348,9 +1427,19 @@ function handleCSVUpload(event) {
                 position: positionIdx >= 0 ? (cols[positionIdx] || '') : ''
             });
         }
-        // localStorage에 저장 (login.html에서도 읽을 수 있도록)
-        localStorage.setItem('hanlim_employees', JSON.stringify(employees));
-        document.getElementById('csvStatus').textContent = '✅ ' + employees.length + '명 업로드 완료';
+        // Firestore에 영구 저장
+        const statusEl = document.getElementById('csvStatus');
+        statusEl.textContent = '저장 중...';
+        db.collection('config').doc('employees').set({
+            list: employees,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedBy: currentUser ? currentUser.email : ''
+        }).then(() => {
+            statusEl.textContent = '✅ ' + employees.length + '명 Firestore에 저장 완료';
+            localStorage.setItem('hanlim_employees', JSON.stringify(employees)); // 로컬 캐시
+        }).catch(err => {
+            statusEl.textContent = '❌ 저장 실패: ' + err.message;
+        });
         event.target.value = '';
     };
     reader.readAsText(file, 'UTF-8');
