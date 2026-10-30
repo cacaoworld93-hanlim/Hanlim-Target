@@ -218,11 +218,15 @@ function showAdminUI() {
 
         const tabEdit = document.getElementById('tabEdit');
         if (tabEdit) tabEdit.style.display = '';
+        bindTabs();
 
         const tabLogs = document.getElementById('tabLogs');
         if (tabLogs) tabLogs.style.display = '';
-
         bindTabs();
+
+        if (typeof loadVisitLogs === 'function') {
+            loadVisitLogs();
+        }
     });
 }
 
@@ -340,9 +344,9 @@ async function logout() {
 </div>
 
 <div class="tabs" id="mainTabs">
-  <button type="button" class="tab on" id="tabDashboard" data-pane="dashboard">📊 대시보드</button>
-  <button type="button" class="tab" id="tabEdit" data-pane="edit" style="display:none">⚙️ 입력</button>
-  <button type="button" class="tab" id="tabLogs" data-pane="logs" style="display:none">📋 방문 로그</button>
+  <button type="button" class="tab on" id="tabDashboard" data-pane="dashboard" onclick="activateTab('dashboard')">📊 대시보드</button>
+  <button type="button" class="tab" id="tabEdit" data-pane="edit" style="display:none" onclick="activateTab('edit')">⚙️ 입력</button>
+  <button type="button" class="tab" id="tabLogs" data-pane="logs" style="display:none" onclick="activateTab('logs')">📋 방문 로그</button>
 </div>
 
 <div class="content">
@@ -698,14 +702,13 @@ function switchTab(e, pane) {
 }
 
 function bindTabs() {
-  const container = document.getElementById('mainTabs');
-  if (!container || container.dataset.bound === '1') return;
-  container.dataset.bound = '1';
-  container.addEventListener('click', function(ev) {
-    const btn = ev.target.closest('.tab[data-pane]');
-    if (!btn) return;
-    ev.preventDefault();
-    activateTab(btn.dataset.pane);
+  document.querySelectorAll('.tab[data-pane]').forEach(btn => {
+    if (btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', function(ev) {
+      ev.preventDefault();
+      activateTab(this.dataset.pane);
+    });
   });
 }
 
@@ -1283,7 +1286,32 @@ function formatNumber(num) {
 window.addEventListener('DOMContentLoaded', function() {
     bindTabs();
     activateTab('dashboard');
-    // 사용자 정보 표시는 onAuthStateChanged → updateUserBadge()에서 처리됨
+    // 사용자 정보 표시
+    if (currentUser) {
+        const badge = document.getElementById('userBadge');
+        if (badge) {
+            const label = currentUser.name
+                ? (currentUser.name + ' (' + currentUser.email + ')')
+                : currentUser.email;
+            badge.textContent = label;
+        }
+        // 관리자 전용 UI
+        if (currentUser.email === ADMIN_EMAIL) {
+            const adminBtn = document.getElementById('adminPwBtn');
+            if (adminBtn) adminBtn.style.display = 'inline-block';
+            const csvSec = document.getElementById('csvUploadSec');
+            if (csvSec) csvSec.style.display = 'block';
+            // 관리자 탭 표시
+            const tabEdit = document.getElementById('tabEdit');
+            if (tabEdit) tabEdit.style.display = '';
+        bindTabs();
+            const tabLogs = document.getElementById('tabLogs');
+            if (tabLogs) tabLogs.style.display = '';
+        bindTabs();
+            // 방문 로그 로드
+            loadVisitLogs();
+        }
+    }
 
     // 월 선택을 현재 월로 설정
     document.getElementById('month-select').value = currentMonth;
