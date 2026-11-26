@@ -470,7 +470,7 @@ async function logout() {
           <svg width="180" height="180" viewBox="0 0 200 200">
             <circle cx="100" cy="100" r="70" fill="none" stroke="#e5e7eb" stroke-width="24"/>
             <circle id="donut_hanlim_arc" cx="100" cy="100" r="70" fill="none"
-              stroke="#2563eb" stroke-width="24" stroke-dasharray="0 439.82"
+              stroke="#6366f1" stroke-width="24" stroke-dasharray="0 439.82"
               stroke-linecap="round" transform="rotate(-90 100 100)"/>
             <text x="100" y="94" text-anchor="middle" font-size="30" font-weight="800" fill="#111827" id="donut_hanlim_pct">0%</text>
             <text x="100" y="118" text-anchor="middle" font-size="13" fill="#6b7280">달성</text>
@@ -483,7 +483,7 @@ async function logout() {
           <svg width="180" height="180" viewBox="0 0 200 200">
             <circle cx="100" cy="100" r="70" fill="none" stroke="#e5e7eb" stroke-width="24"/>
             <circle id="donut_eyes_arc" cx="100" cy="100" r="70" fill="none"
-              stroke="#059669" stroke-width="24" stroke-dasharray="0 439.82"
+              stroke="#10b981" stroke-width="24" stroke-dasharray="0 439.82"
               stroke-linecap="round" transform="rotate(-90 100 100)"/>
             <text x="100" y="94" text-anchor="middle" font-size="30" font-weight="800" fill="#111827" id="donut_eyes_pct">0%</text>
             <text x="100" y="118" text-anchor="middle" font-size="13" fill="#6b7280">달성</text>
@@ -496,7 +496,7 @@ async function logout() {
           <svg width="180" height="180" viewBox="0 0 200 200">
             <circle cx="100" cy="100" r="70" fill="none" stroke="#e5e7eb" stroke-width="24"/>
             <circle id="donut_total_arc" cx="100" cy="100" r="70" fill="none"
-              stroke="#7c3aed" stroke-width="24" stroke-dasharray="0 439.82"
+              stroke="#8b5cf6" stroke-width="24" stroke-dasharray="0 439.82"
               stroke-linecap="round" transform="rotate(-90 100 100)"/>
             <text x="100" y="94" text-anchor="middle" font-size="30" font-weight="800" fill="#111827" id="donut_total_pct">0%</text>
             <text x="100" y="118" text-anchor="middle" font-size="13" fill="#6b7280">달성</text>
@@ -509,7 +509,7 @@ async function logout() {
           <svg width="180" height="180" viewBox="0 0 200 200">
             <circle cx="100" cy="100" r="70" fill="none" stroke="#e5e7eb" stroke-width="24"/>
             <circle id="donut_total_orig_arc" cx="100" cy="100" r="70" fill="none"
-              stroke="#db2777" stroke-width="24" stroke-dasharray="0 439.82"
+              stroke="#f59e0b" stroke-width="24" stroke-dasharray="0 439.82"
               stroke-linecap="round" transform="rotate(-90 100 100)"/>
             <text x="100" y="94" text-anchor="middle" font-size="30" font-weight="800" fill="#111827" id="donut_total_orig_pct">0%</text>
             <text x="100" y="118" text-anchor="middle" font-size="13" fill="#6b7280">달성</text>
@@ -1141,6 +1141,12 @@ function pctColor(pct) {
   return '#dc2626';
 }
 
+// 도넛 가운데 %: 3자리(100% 이상)면 글자를 줄여서 잘리지 않게
+function setDonutPct(el, pct) {
+  el.textContent = pct + '%';
+  el.setAttribute('font-size', String(pct).length >= 3 ? '23' : '30');
+}
+
 // 실적 색: 목표 미달이면 빨간색, 목표 달성(초과 포함)이면 파란색
 function colorActual(id, actual, goal) {
   const el = document.getElementById(id);
@@ -1252,7 +1258,7 @@ function updateDashboard(m) {
   const _dha = document.getElementById('donut_hanlim_arc');
   if (_dha) _dha.setAttribute('stroke-dasharray', (Math.min(hanlimPct/100,1)*_C).toFixed(2)+' '+_C.toFixed(2));
   const _dhp = document.getElementById('donut_hanlim_pct');
-  if (_dhp) _dhp.textContent = hanlimPct + '%';
+  if (_dhp) setDonutPct(_dhp, hanlimPct);
   const _dhg = document.getElementById('donut_hanlim_goal_text');
   if (_dhg) _dhg.textContent = (hanlimGoal/100000000).toFixed(1);
   const _dha2 = document.getElementById('donut_hanlim_actual_text');
@@ -1260,7 +1266,7 @@ function updateDashboard(m) {
   const _dea = document.getElementById('donut_eyes_arc');
   if (_dea) _dea.setAttribute('stroke-dasharray', (Math.min(eyesPct/100,1)*_C).toFixed(2)+' '+_C.toFixed(2));
   const _dep = document.getElementById('donut_eyes_pct');
-  if (_dep) _dep.textContent = eyesPct + '%';
+  if (_dep) setDonutPct(_dep, eyesPct);
   const _deg = document.getElementById('donut_eyes_goal_text');
   if (_deg) _deg.textContent = (eyesGoal/100000000).toFixed(1);
   const _dea2 = document.getElementById('donut_eyes_actual_text');
@@ -1270,7 +1276,7 @@ function updateDashboard(m) {
   const _dta = document.getElementById('donut_total_arc');
   if (_dta) _dta.setAttribute('stroke-dasharray', (Math.min(totalPct/100,1)*_C).toFixed(2)+' '+_C.toFixed(2));
   const _dtp = document.getElementById('donut_total_pct');
-  if (_dtp) _dtp.textContent = totalPct + '%';
+  if (_dtp) setDonutPct(_dtp, totalPct);
   const _dtg = document.getElementById('donut_total_goal_text');
   if (_dtg) _dtg.textContent = (totalGoal/100000000).toFixed(1);
   const _dta2 = document.getElementById('donut_total_actual_text');
@@ -1280,7 +1286,7 @@ function updateDashboard(m) {
   const _dtoa = document.getElementById('donut_total_orig_arc');
   if (_dtoa) _dtoa.setAttribute('stroke-dasharray', (Math.min(totalPctOriginal/100,1)*_C).toFixed(2)+' '+_C.toFixed(2));
   const _dtop = document.getElementById('donut_total_orig_pct');
-  if (_dtop) _dtop.textContent = totalPctOriginal + '%';
+  if (_dtop) setDonutPct(_dtop, totalPctOriginal);
   const _dtog = document.getElementById('donut_total_orig_goal_text');
   if (_dtog) _dtog.textContent = (totalGoalOriginal/100000000).toFixed(1);
   const _dtoa2 = document.getElementById('donut_total_orig_actual_text');
