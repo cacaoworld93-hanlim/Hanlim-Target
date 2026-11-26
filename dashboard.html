@@ -60,7 +60,7 @@ body{font-family:var(--font);background:#f1f5f9;color:var(--fg);font-size:14px;m
 /* 남은금액 강조 - 배경/테두리 제거, 숫자 색깔만 */
 .sum-val.remain{font-size:32px;font-weight:800}
 .sum-val.remain.deficit{color:#dc2626}
-.sum-val.remain.surplus{color:#16a34a}
+.sum-val.remain.surplus{color:#2563eb}
 
 /* 부서별 */
 .dept-g{display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:14px;margin-bottom:14px}
@@ -1134,6 +1134,19 @@ function restoreEditForm(m, d) {
 }
 
 // 대시보드 업데이트
+// 달성율 색: 100% 이상 파란색, 90% 이상 보라색, 90% 미만 빨간색
+function pctColor(pct) {
+  if (pct >= 100) return '#2563eb';
+  if (pct >= 90) return '#7c3aed';
+  return '#dc2626';
+}
+
+// 실적 색: 목표 미달이면 빨간색, 목표 달성(초과 포함)이면 파란색
+function colorActual(id, actual, goal) {
+  const el = document.getElementById(id);
+  if (el) el.style.color = actual < goal ? '#dc2626' : '#2563eb';
+}
+
 function updateDashboard(m) {
   const d = savedData[m];
   if (!d) return;
@@ -1231,6 +1244,8 @@ function updateDashboard(m) {
   if (_toa) _toa.innerHTML = fmtWon(totalActual);
   const _top = document.getElementById('ds_total_orig_pct');
   if (_top) _top.textContent = totalPctOriginal + '%';
+  if (_tp) _tp.style.color = pctColor(totalPct);
+  if (_top) _top.style.color = pctColor(totalPctOriginal);
 
   // 도넛 차트 업데이트
   const _C = 2 * Math.PI * 70;
@@ -1271,18 +1286,24 @@ function updateDashboard(m) {
   const _dtoa2 = document.getElementById('donut_total_orig_actual_text');
   if (_dtoa2) _dtoa2.textContent = (totalActual/100000000).toFixed(1);
 
+  // 도넛 아래 실적 색 (목표 대비)
+  colorActual('donut_hanlim_actual_text', hanlimActual, hanlimGoal);
+  colorActual('donut_eyes_actual_text', eyesActual, eyesGoal);
+  colorActual('donut_total_actual_text', totalActual, totalGoal);
+  colorActual('donut_total_orig_actual_text', totalActual, totalGoalOriginal);
+
   // 합계 남은금액
   const totalRemain = totalGoal - totalActual;
   const _tr = document.getElementById('ds_total_remain');
   if (_tr) {
     _tr.innerHTML = fmtWon(Math.abs(totalRemain));
-    _tr.style.color = totalRemain > 0 ? '#dc2626' : (totalRemain < 0 ? '#16a34a' : '#111827');
+    _tr.style.color = totalRemain > 0 ? '#dc2626' : (totalRemain < 0 ? '#2563eb' : '#111827');
   }
   const totalRemainOriginal = totalGoalOriginal - totalActual;
   const _tro = document.getElementById('ds_total_orig_remain');
   if (_tro) {
     _tro.innerHTML = fmtWon(Math.abs(totalRemainOriginal));
-    _tro.style.color = totalRemainOriginal > 0 ? '#dc2626' : (totalRemainOriginal < 0 ? '#16a34a' : '#111827');
+    _tro.style.color = totalRemainOriginal > 0 ? '#dc2626' : (totalRemainOriginal < 0 ? '#2563eb' : '#111827');
   }
 
   // 말일결재 총계 (대시보드)
