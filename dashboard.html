@@ -124,7 +124,12 @@ body{font-family:var(--font);background:#f1f5f9;color:var(--fg);font-size:14px;m
 .ltbl tbody tr:hover{background:#f9fafb}
 
 /* TOP 10 섹션 */
-.top10-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:10px}
+.top10-grid{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.top10-grid .top10-item{flex:0 0 230px}
+.csv-mini{display:inline-flex;align-items:center;gap:6px}
+.csv-mini-btn{padding:4px 10px;background:#eef2ff;color:#1e3c72;border:1px solid #c7d2fe;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600}
+.csv-mini-status{font-size:11px;color:#6b7280}
+.person-link{color:#1e3c72;font-weight:600;text-decoration:underline;cursor:pointer}
 .top10-item{background:linear-gradient(135deg, #fefefe 0%, #f9fafb 100%);border-radius:6px;padding:12px;border:1px solid var(--bdr);display:flex;align-items:center;gap:10px}
 .top10-rank{font-size:18px;font-weight:800;color:var(--pri);min-width:30px}
 .top10-rank.gold{color:#eab308}
@@ -212,7 +217,7 @@ function showAdminUI() {
     runWhenDomReady(() => {
 
         const csvSec = document.getElementById('csvUploadSec');
-        if (csvSec) csvSec.style.display = 'block';
+        if (csvSec) csvSec.style.display = 'inline-flex';
 
         const tabEdit = document.getElementById('tabEdit');
         if (tabEdit) tabEdit.style.display = '';
@@ -317,6 +322,11 @@ async function logout() {
     </div>
   </div>
   <div class="hdr-r">
+    <span id="csvUploadSec" class="csv-mini" style="display:none;">
+      <button type="button" class="csv-mini-btn" onclick="document.getElementById('csvFileInput').click()">👥 직원 DB 업로드</button>
+      <input type="file" id="csvFileInput" accept=".csv" style="display:none;" onchange="handleCSVUpload(event)">
+      <span id="csvStatus" class="csv-mini-status"></span>
+    </span>
     <span class="ubadge" id="userBadge"></span><button onclick="logout()" style="padding:4px 10px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">로그아웃</button>  </div>
 </div>
 
@@ -642,17 +652,11 @@ async function logout() {
     </div>
 
     <div class="sec">
-      <div class="sttl">방문 TOP 10 (이번달)</div>
+      <div class="sttl">방문 TOP 5 (이번달)</div>
 <div class="top10-grid" id="top10Grid"><div style="color:#9ca3af;font-size:13px;padding:10px;">데이터를 불러오는 중...</div></div>
     </div>
 
-    <div class="sec" id="csvUploadSec" style="display:none;">
-      <div class="sttl">직원 DB 업로드 (관리자 전용)</div>
-      <p style="font-size:13px;color:#6b7280;margin-bottom:10px;">CSV 파일 형식: <code>name,email,dept,position</code> (헤더 포함)</p>
-      <input type="file" id="csvFileInput" accept=".csv" style="display:none;" onchange="handleCSVUpload(event)">
-      <button onclick="document.getElementById('csvFileInput').click()" style="padding:8px 18px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">📂 CSV 파일 선택</button>
-      <span id="csvStatus" style="margin-left:12px;font-size:13px;color:#6b7280;"></span>
-    </div>
+    <div class="sec" id="personMonthly" style="display:none;"></div>
 
     <div class="sec">
       <div class="sttl">방문 기록</div>
@@ -1360,6 +1364,42 @@ async function loadRoster() {
     }
 }
 
+// 이름 클릭 → 최근 3개월 월별 방문 횟수
+function showPersonMonthly(encEmail) {
+    const email = decodeURIComponent(encEmail).toLowerCase();
+    const panel = document.getElementById('personMonthly');
+    if (!panel) return;
+
+    const now = new Date();
+    const months = [0, 1, 2].map(i => {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        return { y: d.getFullYear(), m: d.getMonth() };
+    });
+
+    const mine = allVisitLogs.filter(l => (l.email || '').toLowerCase() === email);
+    const countIn = (mo) => mine.filter(l => {
+        const dt = l.loginTime && l.loginTime.toDate ? l.loginTime.toDate() : new Date(l.loginTimeLocal || '');
+        return dt.getFullYear() === mo.y && dt.getMonth() === mo.m;
+    }).length;
+
+    const p = personOf(mine[0] || { email: email });
+    const who = [p.name || email, p.position, p.dept].filter(Boolean).join(' · ');
+
+    panel.style.display = 'block';
+    panel.innerHTML = `
+      <div class="sttl" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>${who} · 최근 3개월 방문</span>
+        <button onclick="document.getElementById('personMonthly').style.display='none'" style="padding:3px 10px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:12px;">닫기</button>
+      </div>
+      <table class="ltbl" style="max-width:420px;">
+        <thead><tr><th>월</th><th>방문 횟수</th></tr></thead>
+        <tbody>
+          ${months.map(mo => `<tr><td>${mo.y}년 ${mo.m + 1}월</td><td>${countIn(mo)}회</td></tr>`).join('')}
+        </tbody>
+      </table>`;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 // 로그 한 건의 이름·부서·직책: 명단이 있으면 명단 값, 없으면 로그에 저장된 값
 function personOf(log) {
     const r = rosterByEmail[(log.email || '').toLowerCase()];
@@ -1376,7 +1416,7 @@ async function loadVisitLogs() {
         await loadRoster();
         const snap = await db.collection('visitLogs')
             .orderBy('loginTime', 'desc')
-            .limit(500)
+            .limit(3000)
             .get();
         allVisitLogs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderVisitLogs();
@@ -1415,7 +1455,7 @@ function renderVisitLogs() {
         const timeStr = dt.toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
         const p = personOf(log);
         return `<tr>
-            <td>${p.name || '-'}</td>
+            <td><a class="person-link" onclick="showPersonMonthly('${encodeURIComponent(log.email || '')}'); return false;" href="#">${p.name || '-'}</a></td>
             <td>${p.position || '-'}</td>
             <td>${p.dept || '-'}</td>
             <td>${log.email || '-'}</td>
@@ -1445,7 +1485,7 @@ function renderTop10() {
         counts[key].count++;
     });
 
-    const sorted = Object.values(counts).sort((a,b) => b.count - a.count).slice(0, 10);
+    const sorted = Object.values(counts).sort((a,b) => b.count - a.count).slice(0, 5);
     const medals = ['🥇','🥈','🥉'];
     const rankCls = ['gold','silver','bronze'];
 

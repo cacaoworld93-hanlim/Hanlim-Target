@@ -211,6 +211,7 @@ if (logoutMarkerRaw) {
 }
 
 let isBusy = false;
+let loginFlowBusy = false;
 
 const msgBox = document.getElementById('msgBox');
 const formBox = document.getElementById('formBox');
@@ -333,6 +334,7 @@ async function handlePrimaryAction() {
   hideMsg();
 
   try {
+    loginFlowBusy = true;
     const result = await auth.signInWithEmailAndPassword(email, pw);
     const user = result.user;
     if (user && user.emailVerified) {
@@ -341,9 +343,11 @@ async function handlePrimaryAction() {
       window.location.replace(DASHBOARD_URL);
       return;
     }
+    loginFlowBusy = false;
     // 인증되지 않은 계정: 인증 메일 발송 후 안내
     await sendVerifyMail(user);
   } catch (err) {
+    loginFlowBusy = false;
     setBusy(false);
     showMsg(getFriendlyError(err, '로그인 실패'), 'error');
   }
@@ -509,6 +513,8 @@ auth.onAuthStateChanged(user => {
   }
 
   if (!user || !isHanlimEmail(user.email || '')) return;
+  // 로그인 처리 중이면 방문 기록 저장이 끝날 때까지 이동하지 않음
+  if (loginFlowBusy) return;
 
   if (user.emailVerified) {
     window.location.replace(DASHBOARD_URL);
