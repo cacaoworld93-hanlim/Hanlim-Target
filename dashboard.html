@@ -1345,10 +1345,35 @@ window.addEventListener('DOMContentLoaded', function() {
 
 // ── 방문 로그 (Firebase Firestore) ──────────────────────────────
 let allVisitLogs = [];
+let rosterByEmail = {};
+
+// 현재 직원 명단(config/employees)을 이메일 기준으로 읽어 둠
+// → 명단을 나중에 올려도 예전 방문 기록에 이름·부서·직책이 붙음
+async function loadRoster() {
+    rosterByEmail = {};
+    try {
+        const snap = await db.collection('config').doc('employees').get();
+        const list = (snap.exists && snap.data().list) || [];
+        list.forEach(e => { rosterByEmail[(e.email || '').toLowerCase()] = e; });
+    } catch (e) {
+        console.warn('직원 명단 로드 실패:', e.message);
+    }
+}
+
+// 로그 한 건의 이름·부서·직책: 명단이 있으면 명단 값, 없으면 로그에 저장된 값
+function personOf(log) {
+    const r = rosterByEmail[(log.email || '').toLowerCase()];
+    return {
+        name: (r && r.name) || log.name || '',
+        dept: (r && r.dept) || log.dept || '',
+        position: (r && r.position) || log.position || ''
+    };
+}
 
 async function loadVisitLogs() {
     if (!db) return;
     try {
+        await loadRoster();
         const snap = await db.collection('visitLogs')
             .orderBy('loginTime', 'desc')
             .limit(500)
@@ -1388,10 +1413,11 @@ function renderVisitLogs() {
         const dt = log.loginTime && log.loginTime.toDate ? log.loginTime.toDate() : new Date(log.loginTimeLocal || '');
         const dateStr = dt.toLocaleDateString('ko-KR');
         const timeStr = dt.toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+        const p = personOf(log);
         return `<tr>
-            <td>${log.name || '-'}</td>
-            <td>${log.position || '-'}</td>
-            <td>${log.dept || '-'}</td>
+            <td>${p.name || '-'}</td>
+            <td>${p.position || '-'}</td>
+            <td>${p.dept || '-'}</td>
             <td>${log.email || '-'}</td>
             <td>${dateStr} ${timeStr}</td>
         </tr>`;
@@ -1415,7 +1441,7 @@ function renderTop10() {
     const counts = {};
     monthLogs.forEach(log => {
         const key = log.email;
-        if (!counts[key]) counts[key] = { name: log.name, dept: log.dept, position: log.position, count: 0 };
+        if (!counts[key]) counts[key] = { ...personOf(log), count: 0 };
         counts[key].count++;
     });
 
