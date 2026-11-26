@@ -259,7 +259,7 @@ auth.onAuthStateChanged(user => {
     }
 
     const email = (user && user.email) ? String(user.email).toLowerCase() : '';
-    if (!user || !email.endsWith('@hanlim.com')) {
+    if (!user || !email.endsWith('@hanlim.com') || !user.emailVerified) {
         currentUser = null;
         hideAdminUI();
         window.location.replace('login.html');

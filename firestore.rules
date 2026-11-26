@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 회사 이메일(@hanlim.com) + 이메일 인증 완료된 계정만 허용
+    function isSignedInHanlim() {
+      return request.auth != null
+        && request.auth.token.email != null
+        && request.auth.token.email.matches('.*@hanlim\\.com$')
+        && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isSignedInHanlim()
+        && request.auth.token.email == 'eui.hyuk@hanlim.com';
+    }
+
+    // 월별 대시보드 데이터
+    match /dashboardState/{docId} {
+      allow read: if isSignedInHanlim();
+      allow write: if isAdmin();
+    }
+
+    // 직원 주소록 / 로그인 매핑용 설정
+    match /config/{docId} {
+      allow read: if isSignedInHanlim();
+      allow write: if isAdmin();
+    }
+
+    // 방문 로그
+    match /visitLogs/{logId} {
+      allow create: if isSignedInHanlim()
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.loginTime == request.time;
+
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // 그 외 모든 문서는 차단
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

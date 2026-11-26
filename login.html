@@ -112,21 +112,6 @@
   <div class="subtitle">판매 대시보드</div>
   <hr class="divider">
 
-  <!-- 비밀번호 입력 박스 (미사용, 하위호환 유지) -->
-  <div id="localPwBox" class="form-box" style="display:none !important; background:#fffbeb; border:1px solid #f59e0b; border-radius:8px; padding:14px; margin-bottom:12px;;display:none !important;">
-    <div style="font-size:12px; color:#92400e; margin-bottom:8px;">
-      <strong>이메일/비밀번호 로그인</strong><br>
-      계정: <span id="localEmailDisplay" style="font-weight:600;"></span>
-    </div>
-    <input type="password" id="localPwInput" placeholder="비밀번호 입력"
-           style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; margin-bottom:8px;"
-           onkeydown="if(event.key==='Enter') localSignIn()">
-    <button onclick="localSignIn()"
-            style="width:100%; padding:11px; background:#2563eb; color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer;">
-      비밀번호로 로그인
-    </button>
-  </div>
-
   <div id="msgBox" class="msg-box"></div>
 
   <!-- 이메일 입력 폼 -->
@@ -137,6 +122,14 @@
     <input type="password" id="passwordInput" placeholder="비밀번호 입력" autocomplete="current-password" style="width:100%;">
     <button class="btn" id="sendBtn" onclick="handlePrimaryAction()">로그인</button>
     <p class="hint">@hanlim.com 이메일과 등록된 비밀번호로 로그인합니다.</p>
+  </div>
+
+  <!-- 이메일 인증 안내 (로그인은 됐지만 회사 메일 인증이 아직인 경우) -->
+  <div id="verifyBox" style="display:none;">
+    <div id="verifyMsg" class="msg-box"></div>
+    <button class="btn" id="checkVerifyBtn" onclick="checkEmailVerified()">인증 완료 확인</button>
+    <button class="btn" style="margin-top:10px;background:#6b7280;" onclick="resendVerifyEmail()">인증 메일 다시 보내기</button>
+    <button class="btn" style="margin-top:10px;background:#fff;color:#1a3a6b;border:1px solid #1a3a6b;" onclick="cancelVerify()">다른 계정으로 로그인</button>
   </div>
 
   <div class="sent-box" id="sentBox" style="display:none !important;"></div>
@@ -302,12 +295,77 @@ async function handlePrimaryAction() {
 
   try {
     const result = await auth.signInWithEmailAndPassword(email, pw);
-    await saveVisitLog(result.user || {});
-    window.location.replace(DASHBOARD_URL);
+    const user = result.user;
+    if (user && user.emailVerified) {
+      await saveVisitLog(user);
+      window.location.replace(DASHBOARD_URL);
+      return;
+    }
+    // 인증되지 않은 계정: 인증 메일 발송 후 안내
+    await sendVerifyMail(user);
   } catch (err) {
     setBusy(false);
     showMsg(getFriendlyError(err, '로그인 실패'), 'error');
   }
+}
+
+// ── 이메일 인증 흐름 ──────────────────────────────────────────────
+function showVerifyBox(text, type) {
+  formBox.classList.add('hidden');
+  document.getElementById('verifyBox').style.display = 'block';
+  const vm = document.getElementById('verifyMsg');
+  vm.textContent = text;
+  vm.className = 'msg-box ' + type;
+  setBusy(false);
+  hideMsg();
+}
+
+function setVerifyButtonsDisabled(flag) {
+  document.getElementById('checkVerifyBtn').disabled = flag;
+}
+
+async function sendVerifyMail(user) {
+  if (!user) return;
+  try {
+    await user.sendEmailVerification();
+    showVerifyBox('회사 메일로 인증 메일을 보냈습니다. 메일(스팸함 포함)에서 링크를 누른 뒤 "인증 완료 확인"을 눌러주세요.', 'success');
+  } catch (err) {
+    showVerifyBox(getFriendlyError(err, '인증 메일 발송 실패'), 'error');
+  }
+}
+
+async function resendVerifyEmail() {
+  const user = auth.currentUser;
+  if (!user) { cancelVerify(); return; }
+  await sendVerifyMail(user);
+}
+
+async function checkEmailVerified() {
+  const user = auth.currentUser;
+  if (!user) { cancelVerify(); return; }
+  setVerifyButtonsDisabled(true);
+  try {
+    await user.reload();
+    // 보안 규칙은 ID 토큰의 email_verified 값을 보므로 토큰을 새로 받아야 반영됨
+    await user.getIdToken(true);
+    if (auth.currentUser && auth.currentUser.emailVerified) {
+      await saveVisitLog(auth.currentUser);
+      window.location.replace(DASHBOARD_URL);
+      return;
+    }
+    showVerifyBox('아직 인증이 확인되지 않았습니다. 메일의 링크를 누른 뒤 다시 시도해주세요.', 'error');
+  } catch (err) {
+    showVerifyBox(getFriendlyError(err, '인증 확인 실패'), 'error');
+  } finally {
+    setVerifyButtonsDisabled(false);
+  }
+}
+
+async function cancelVerify() {
+  try { await auth.signOut(); } catch (e) {}
+  document.getElementById('verifyBox').style.display = 'none';
+  formBox.classList.remove('hidden');
+  resetForm();
 }
 
 function resetForm() {
@@ -339,8 +397,13 @@ auth.onAuthStateChanged(user => {
     return;
   }
 
-  if (user && isHanlimEmail(user.email || '')) {
+  if (!user || !isHanlimEmail(user.email || '')) return;
+
+  if (user.emailVerified) {
     window.location.replace(DASHBOARD_URL);
+  } else if (document.getElementById('verifyBox').style.display !== 'block') {
+    // 인증 안 된 계정으로 다시 들어온 경우: 인증 안내 화면 표시
+    showVerifyBox('이메일 인증이 필요합니다. 인증 메일이 없으면 "인증 메일 다시 보내기"를 눌러주세요.', 'info');
   }
 });
 
