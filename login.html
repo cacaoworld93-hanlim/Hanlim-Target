@@ -70,7 +70,6 @@
   }
   input[type=email]:focus,
   input[type=password]:focus { border-color: #1a3a6b; }
-  #localPwBox { display: none !important; }
   .btn {
     width: 100%;
     padding: 13px;
@@ -97,8 +96,6 @@
     border-top: 1px solid #eee;
     padding-top: 16px;
   }
-  .sent-box { display: none; }
-  .sent-box.visible { display: block; }
   .form-box { display: block; }
   .form-box.hidden { display: none; }
 </style>
@@ -151,7 +148,6 @@
     <button class="btn" style="margin-top:10px;background:#fff;color:#1a3a6b;border:1px solid #1a3a6b;" onclick="cancelVerify()">다른 계정으로 로그인</button>
   </div>
 
-  <div class="sent-box" id="sentBox" style="display:none !important;"></div>
 
   <div class="footer">
     📞 02-3489-6226<br>
@@ -168,7 +164,7 @@
 // ================================================================
 // Firebase 설정
 // ================================================================
-const BUILD_VERSION  = '2026-10-30-password-only';
+const BUILD_VERSION  = '2026-11-26-signup';
 const FIREBASE_CONFIG = {
     apiKey:            "AIzaSyC1l8qJ-bDh4pGELdmW8B5xiCCoVQNBrWE",
     authDomain:        "hanlim-target-dfd63.firebaseapp.com",
