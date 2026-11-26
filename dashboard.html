@@ -210,8 +210,6 @@ function updateUserBadge() {
 
 function showAdminUI() {
     runWhenDomReady(() => {
-        const adminBtn = document.getElementById('adminPwBtn');
-        if (adminBtn) adminBtn.style.display = 'inline-block';
 
         const csvSec = document.getElementById('csvUploadSec');
         if (csvSec) csvSec.style.display = 'block';
@@ -228,8 +226,6 @@ function showAdminUI() {
 
 function hideAdminUI() {
     runWhenDomReady(() => {
-        const adminBtn = document.getElementById('adminPwBtn');
-        if (adminBtn) adminBtn.style.display = 'none';
 
         const csvSec = document.getElementById('csvUploadSec');
         if (csvSec) csvSec.style.display = 'none';
@@ -309,21 +305,7 @@ async function logout() {
 </head>
 <body>
 
-<!-- 비밀번호 변경 모달 -->
-<div id="changePasswordModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999;">
-  <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:30px; border-radius:12px; max-width:400px; width:90%;">
-    <h3 style="margin-top:0;">관리자 비밀번호 변경</h3>
-    <input type="password" id="oldPassword" placeholder="현재 비밀번호" style="width:100%; padding:12px; margin:10px 0; border:1px solid #ddd; border-radius:6px;">
-    <input type="password" id="newPassword" placeholder="새 비밀번호" style="width:100%; padding:12px; margin:10px 0; border:1px solid #ddd; border-radius:6px;">
-    <input type="password" id="confirmPassword" placeholder="비밀번호 확인" style="width:100%; padding:12px; margin:10px 0; border:1px solid #ddd; border-radius:6px;">
-    <div style="display:flex; gap:10px; margin-top:20px;">
-      <button onclick="changePassword()" style="flex:1; padding:12px; background:#1e3c72; color:#fff; border:none; border-radius:6px; cursor:pointer;">변경</button>
-      <button onclick="closePasswordModal()" style="flex:1; padding:12px; background:#ccc; color:#333; border:none; border-radius:6px; cursor:pointer;">취소</button>
-    </div>
-  </div>
-</div>
 
-<div id="user-info" style="position: fixed; top: 10px; right: 20px; z-index: 9999; background: white; padding: 8px 15px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></div>
 
 
 <div class="hdr">
@@ -335,8 +317,7 @@ async function logout() {
     </div>
   </div>
   <div class="hdr-r">
-    <span class="ubadge" id="userBadge"></span><button onclick="logout()" style="padding:4px 10px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">로그아웃</button><button onclick="openPasswordModal()" id="adminPwBtn" style="display:none;padding:4px 10px;background:#6b7280;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;margin-left:4px;">비밀번호</button>
-  </div>
+    <span class="ubadge" id="userBadge"></span><button onclick="logout()" style="padding:4px 10px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">로그아웃</button>  </div>
 </div>
 
 <div class="tabs" id="mainTabs">
@@ -421,7 +402,7 @@ async function logout() {
             </div>
           </div>
           <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;">
-            <div style="font-size:13px;font-weight:700;color:#7c3aed;margin-bottom:10px;">원래목표 기준</div>
+            <div style="font-size:13px;font-weight:700;color:#7c3aed;margin-bottom:10px;">기본목표 기준</div>
             <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px;align-items:end;">
               <div>
                 <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">합계 목표</div>
@@ -523,7 +504,7 @@ async function logout() {
             <text x="100" y="94" text-anchor="middle" font-size="30" font-weight="800" fill="#111827" id="donut_total_orig_pct">0%</text>
             <text x="100" y="118" text-anchor="middle" font-size="13" fill="#6b7280">달성</text>
           </svg>
-          <div style="font-size:14px;font-weight:700;color:#111827;margin-top:6px;">한림 + 눈건강 합계 (원래목표)</div>
+          <div style="font-size:14px;font-weight:700;color:#111827;margin-top:6px;">한림 + 눈건강 합계 (기본목표)</div>
           <div style="font-size:12px;color:#6b7280;margin-top:3px;">목표 <span id="donut_total_orig_goal_text" style="color:#111827;font-weight:600;">-</span>억 / 실적 <span id="donut_total_orig_actual_text" style="color:#db2777;font-weight:600;">-</span>억</div>
         </div>
 
@@ -589,11 +570,11 @@ async function logout() {
       <div class="pt-c">
         <div class="ptcol">
           <label>한림 (제약+MS+화이자)</label>
-          <input type="number" id="eg_pt_hanrim" placeholder="0">
+          <input type="text" inputmode="numeric" id="eg_pt_hanrim" placeholder="0" oninput="fmtCommaInput(this)">
         </div>
         <div class="ptcol">
           <label>눈건강</label>
-          <input type="number" id="eg_pt_eyes" placeholder="0">
+          <input type="text" inputmode="numeric" id="eg_pt_eyes" placeholder="0" oninput="fmtCommaInput(this)">
         </div>
       </div>
     </div>
@@ -609,11 +590,11 @@ async function logout() {
           </div>
           <div class="goal-r">
             <label>차감 목표 (원)</label>
-            <input type="number" id="adj_hanlim_cut" placeholder="0" oninput="syncAdj('hanlim','cut')">
+            <input type="text" inputmode="numeric" id="adj_hanlim_cut" placeholder="0" oninput="fmtCommaInput(this);syncAdj('hanlim','cut')">
           </div>
           <div class="goal-r">
             <label>수정 목표 (원)</label>
-            <input type="number" id="adj_hanlim_mod" placeholder="0" oninput="syncAdj('hanlim','mod')">
+            <input type="text" inputmode="numeric" id="adj_hanlim_mod" placeholder="0" oninput="fmtCommaInput(this);syncAdj('hanlim','mod')">
           </div>
           <div class="goal-r">
             <label>적용목표</label>
@@ -628,11 +609,11 @@ async function logout() {
           </div>
           <div class="goal-r">
             <label>차감 목표 (원)</label>
-            <input type="number" id="adj_eyes_cut" placeholder="0" oninput="syncAdj('eyes','cut')">
+            <input type="text" inputmode="numeric" id="adj_eyes_cut" placeholder="0" oninput="fmtCommaInput(this);syncAdj('eyes','cut')">
           </div>
           <div class="goal-r">
             <label>수정 목표 (원)</label>
-            <input type="number" id="adj_eyes_mod" placeholder="0" oninput="syncAdj('eyes','mod')">
+            <input type="text" inputmode="numeric" id="adj_eyes_mod" placeholder="0" oninput="fmtCommaInput(this);syncAdj('eyes','mod')">
           </div>
           <div class="goal-r">
             <label>적용목표</label>
@@ -787,28 +768,28 @@ function syncAdj(type, field) {
   if (!cutEl || !modEl || !finalEl) return;
 
   if (field === 'cut') {
-    var cut = parseInt(cutEl.value, 10);
+    var cut = numOf(cutEl.value);
     if (isNaN(cut)) {
       modEl.value = '';
       finalEl.innerHTML = fmtWon(baseGoal);
       return;
     }
     cut = Math.max(0, Math.min(baseGoal, cut));
-    cutEl.value = cut;
-    modEl.value = baseGoal - cut;
+    cutEl.value = fmtNum(cut);
+    modEl.value = fmtNum(baseGoal - cut);
   } else {
-    var mod = parseInt(modEl.value, 10);
+    var mod = numOf(modEl.value);
     if (isNaN(mod)) {
       cutEl.value = '';
       finalEl.innerHTML = fmtWon(baseGoal);
       return;
     }
     mod = Math.max(0, Math.min(baseGoal, mod));
-    modEl.value = mod;
-    cutEl.value = baseGoal - mod;
+    modEl.value = fmtNum(mod);
+    cutEl.value = fmtNum(baseGoal - mod);
   }
 
-  var effective = parseInt(modEl.value, 10);
+  var effective = numOf(modEl.value);
   if (isNaN(effective)) effective = baseGoal;
   finalEl.innerHTML = fmtWon(effective);
 }
@@ -942,8 +923,8 @@ function loadMonthGoals() {
   var adjEyesModEl = document.getElementById('adj_eyes_mod');
   if (adjHanlimCutEl) adjHanlimCutEl.value = '';
   if (adjEyesCutEl) adjEyesCutEl.value = '';
-  if (adjHanlimModEl) adjHanlimModEl.value = hanlimBase;
-  if (adjEyesModEl) adjEyesModEl.value = eyesBase;
+  if (adjHanlimModEl) adjHanlimModEl.value = fmtNum(hanlimBase);
+  if (adjEyesModEl) adjEyesModEl.value = fmtNum(eyesBase);
 
   updateEditTotal('jeyak');
   updateEditTotal('ms');
@@ -965,23 +946,23 @@ function loadMonthGoals() {
   ].forEach(function(pair) {
     var el = document.getElementById(pair[0]);
     if (el && d[pair[1]] !== undefined && d[pair[1]] !== null && d[pair[1]] !== 0) {
-      el.value = d[pair[1]];
+      el.value = fmtNum(d[pair[1]]);
     }
   });
 
   if (d.adj_hanlim_mod !== undefined && d.adj_hanlim_mod !== null && d.adj_hanlim_mod !== '') {
-    document.getElementById('adj_hanlim_mod').value = d.adj_hanlim_mod;
+    document.getElementById('adj_hanlim_mod').value = fmtNum(d.adj_hanlim_mod);
     syncAdj('hanlim', 'mod');
   } else if (d.adj_hanlim_cut !== undefined && d.adj_hanlim_cut !== null && d.adj_hanlim_cut !== '') {
-    document.getElementById('adj_hanlim_cut').value = d.adj_hanlim_cut;
+    document.getElementById('adj_hanlim_cut').value = fmtNum(d.adj_hanlim_cut);
     syncAdj('hanlim', 'cut');
   }
 
   if (d.adj_eyes_mod !== undefined && d.adj_eyes_mod !== null && d.adj_eyes_mod !== '') {
-    document.getElementById('adj_eyes_mod').value = d.adj_eyes_mod;
+    document.getElementById('adj_eyes_mod').value = fmtNum(d.adj_eyes_mod);
     syncAdj('eyes', 'mod');
   } else if (d.adj_eyes_cut !== undefined && d.adj_eyes_cut !== null && d.adj_eyes_cut !== '') {
-    document.getElementById('adj_eyes_cut').value = d.adj_eyes_cut;
+    document.getElementById('adj_eyes_cut').value = fmtNum(d.adj_eyes_cut);
     syncAdj('eyes', 'cut');
   }
 
@@ -1027,10 +1008,10 @@ function saveNow() {
     goal_hanlim: parseInt(document.getElementById('goal_hanlim').value, 10) || 0,
     goal_pfizer: parseInt(document.getElementById('goal_pfizer').value, 10) || 0,
     goal_eyes: parseInt(document.getElementById('goal_eyes').value, 10) || 0,
-    adj_hanlim_cut: parseInt(document.getElementById('adj_hanlim_cut').value, 10) || 0,
-    adj_hanlim_mod: parseInt(document.getElementById('adj_hanlim_mod').value, 10) || 0,
-    adj_eyes_cut: parseInt(document.getElementById('adj_eyes_cut').value, 10) || 0,
-    adj_eyes_mod: parseInt(document.getElementById('adj_eyes_mod').value, 10) || 0,
+    adj_hanlim_cut: numOf(document.getElementById('adj_hanlim_cut').value) || 0,
+    adj_hanlim_mod: numOf(document.getElementById('adj_hanlim_mod').value) || 0,
+    adj_eyes_cut: numOf(document.getElementById('adj_eyes_cut').value) || 0,
+    adj_eyes_mod: numOf(document.getElementById('adj_eyes_mod').value) || 0,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     updatedBy: currentUser.email
   };
@@ -1276,7 +1257,7 @@ function updateDashboard(m) {
   const _dta2 = document.getElementById('donut_total_actual_text');
   if (_dta2) _dta2.textContent = (totalActual/100000000).toFixed(1);
 
-  // 합계 도넛 (원래목표)
+  // 합계 도넛 (기본목표)
   const _dtoa = document.getElementById('donut_total_orig_arc');
   if (_dtoa) _dtoa.setAttribute('stroke-dasharray', (Math.min(totalPctOriginal/100,1)*_C).toFixed(2)+' '+_C.toFixed(2));
   const _dtop = document.getElementById('donut_total_orig_pct');
@@ -1326,34 +1307,6 @@ function legacyLogoutRedirectOnly() {
     return logout();
 }
 
-function openPasswordModal() {
-    const modal = document.createElement('div');
-    modal.id = 'passwordModal';
-    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999;';
-    modal.innerHTML = `
-        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:30px; border-radius:12px; max-width:400px; width:90%;">
-            <h3 style="margin-top:0;">관리자 비밀번호 변경</h3>
-            <input type="password" id="oldPassword" placeholder="현재 비밀번호" style="width:100%; padding:12px; margin:10px 0; border:1px solid #ddd; border-radius:6px;">
-            <input type="password" id="newPassword" placeholder="새 비밀번호" style="width:100%; padding:12px; margin:10px 0; border:1px solid #ddd; border-radius:6px;">
-            <input type="password" id="confirmPassword" placeholder="비밀번호 확인" style="width:100%; padding:12px; margin:10px 0; border:1px solid #ddd; border-radius:6px;">
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button onclick="changePassword()" style="flex:1; padding:12px; background:#0066cc; color:#fff; border:none; border-radius:6px; cursor:pointer;">변경</button>
-                <button onclick="closePasswordModal()" style="flex:1; padding:12px; background:#ccc; color:#333; border:none; border-radius:6px; cursor:pointer;">취소</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-}
-
-function closePasswordModal() {
-    const modal = document.getElementById('passwordModal');
-    if (modal) modal.remove();
-}
-
-function changePassword() {
-    alert('비밀번호 변경은 Firebase Authentication 사용자 비밀번호 변경 또는 재설정 메일 방식으로 처리해야 합니다. 현재 이 버튼은 안내용입니다.');
-    closePasswordModal();
-}
 
 function formatNumber(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -1528,6 +1481,17 @@ function getInputVal(id) {
   if (!el) return 0;
   var v = parseInt((el.value||'').replace(/,/g,''), 10);
   return isNaN(v) ? 0 : v;
+}
+
+// 쉼표 포함 문자열 → 숫자 (쉼표 제거 후 정수로)
+function numOf(s) {
+  var v = parseInt(String(s || '').replace(/,/g, ''), 10);
+  return isNaN(v) ? NaN : v;
+}
+
+// 숫자 → 천 단위 쉼표 문자열
+function fmtNum(n) {
+  return Number(n || 0).toLocaleString('ko-KR');
 }
 
 function updateEditTotal(type) {
