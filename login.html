@@ -98,6 +98,7 @@
   }
   .form-box { display: block; }
   .form-box.hidden { display: none; }
+  .hidden { display: none !important; }
 </style>
 </head>
 <body>
@@ -112,13 +113,13 @@
   <div id="msgBox" class="msg-box"></div>
 
   <!-- 로그인 / 회원가입 전환 -->
-  <div style="display:flex;gap:8px;margin-bottom:16px;">
+  <div id="authTabs" class="hidden" style="display:flex;gap:8px;margin-bottom:16px;">
     <button type="button" id="tabLoginBtn" class="btn" style="background:#1a3a6b;" onclick="switchAuthMode('login')">로그인</button>
     <button type="button" id="tabSignupBtn" class="btn" style="background:#fff;color:#1a3a6b;border:1px solid #1a3a6b;" onclick="switchAuthMode('signup')">회원가입</button>
   </div>
 
   <!-- 이메일 입력 폼 -->
-  <div class="form-box" id="formBox">
+  <div class="form-box hidden" id="formBox">
     <label for="emailInput">한림 이메일 주소</label>
     <input type="email" id="emailInput" placeholder="example@hanlim.com" autocomplete="email" autofocus>
     <label for="passwordInput" style="margin-top:10px;display:block;">비밀번호</label>
@@ -494,7 +495,9 @@ auth.onAuthStateChanged(user => {
   }
 });
 
+// 스크립트 준비가 끝난 뒤에만 입력 폼을 보여줌 (준비 전 클릭이 무시되는 문제 방지)
 formBox.classList.remove('hidden');
+document.getElementById('authTabs').classList.remove('hidden');
 hideMsg();
 setBusy(false);
 </script>
