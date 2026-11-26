@@ -1627,7 +1627,7 @@ function handleCSVUpload(event) {
         reader.onload = function(e) {
             const text = e.target.result || '';
             if (encoding === 'UTF-8' && /�/.test(text)) {
-                readAsEncoding('CP949');
+                readAsEncoding('windows-949');
                 return;
             }
             processText(text);
@@ -1636,8 +1636,8 @@ function handleCSVUpload(event) {
         try {
             reader.readAsText(file, encoding);
         } catch (err) {
-            if (encoding !== 'CP949') {
-                readAsEncoding('CP949');
+            if (encoding !== 'windows-949') {
+                readAsEncoding('windows-949');
             } else {
                 statusEl.textContent = '❌ CSV 읽기 실패: ' + err.message;
             }
