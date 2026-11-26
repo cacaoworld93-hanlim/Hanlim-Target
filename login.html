@@ -312,7 +312,8 @@ async function handlePrimaryAction() {
     const result = await auth.signInWithEmailAndPassword(email, pw);
     const user = result.user;
     if (user && user.emailVerified) {
-      await saveVisitLog(user);
+      // 방문 기록은 최대 3초까지만 기다리고, 기록이 늦어도 대시보드로 이동
+      await Promise.race([saveVisitLog(user), new Promise(r => setTimeout(r, 3000))]);
       window.location.replace(DASHBOARD_URL);
       return;
     }
@@ -435,7 +436,7 @@ async function checkEmailVerified() {
     // 보안 규칙은 ID 토큰의 email_verified 값을 보므로 토큰을 새로 받아야 반영됨
     await user.getIdToken(true);
     if (auth.currentUser && auth.currentUser.emailVerified) {
-      await saveVisitLog(auth.currentUser);
+      await Promise.race([saveVisitLog(auth.currentUser), new Promise(r => setTimeout(r, 3000))]);
       window.location.replace(DASHBOARD_URL);
       return;
     }
